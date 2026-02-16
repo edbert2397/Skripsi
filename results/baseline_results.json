@@ -1,0 +1,227 @@
+{
+  "method": "Baseline (Single LoRA + Replay)",
+  "cl_metrics": {
+    "Final Performance (FP)": 0.0,
+    "Average Performance (AP)": 0.0,
+    "Forgetting (FT)": 0.0,
+    "Performance Matrix": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "efficiency": {
+    "total_time_sec": 1143.32,
+    "forward_passes": 2000,
+    "projection_time_sec": 0.0,
+    "projection_overhead_pct": 0.0,
+    "peak_memory_mb": 3296.2
+  },
+  "train_log": [
+    {
+      "task": "sst2",
+      "step": 50,
+      "loss": 13.232939720153809
+    },
+    {
+      "task": "sst2",
+      "step": 100,
+      "loss": 1.0900129079818726
+    },
+    {
+      "task": "sst2",
+      "step": 150,
+      "loss": 0.4360346496105194
+    },
+    {
+      "task": "sst2",
+      "step": 200,
+      "loss": 0.3107028603553772
+    },
+    {
+      "task": "sst2",
+      "step": 250,
+      "loss": 0.07431863248348236
+    },
+    {
+      "task": "sst2",
+      "step": 300,
+      "loss": 0.4050593674182892
+    },
+    {
+      "task": "sst2",
+      "step": 350,
+      "loss": 0.00056386215146631
+    },
+    {
+      "task": "sst2",
+      "step": 400,
+      "loss": 0.7977728247642517
+    },
+    {
+      "task": "sst2",
+      "step": 450,
+      "loss": 0.001420509652234614
+    },
+    {
+      "task": "sst2",
+      "step": 500,
+      "loss": 0.002397205214947462
+    },
+    {
+      "task": "sst2",
+      "step": 550,
+      "loss": 0.0012485216138884425
+    },
+    {
+      "task": "sst2",
+      "step": 600,
+      "loss": 0.0008663854678161442
+    },
+    {
+      "task": "sst2",
+      "step": 650,
+      "loss": 0.005504775792360306
+    },
+    {
+      "task": "sst2",
+      "step": 700,
+      "loss": 0.2310197502374649
+    },
+    {
+      "task": "sst2",
+      "step": 750,
+      "loss": 0.0014175752876326442
+    },
+    {
+      "task": "sst2",
+      "step": 800,
+      "loss": 0.0021241819486021996
+    },
+    {
+      "task": "sst2",
+      "step": 850,
+      "loss": 0.0070043038576841354
+    },
+    {
+      "task": "sst2",
+      "step": 900,
+      "loss": 0.000755084038246423
+    },
+    {
+      "task": "sst2",
+      "step": 950,
+      "loss": 0.007043519522994757
+    },
+    {
+      "task": "sst2",
+      "step": 1000,
+      "loss": 0.04362449795007706
+    },
+    {
+      "task": "ag_news",
+      "step": 50,
+      "loss": 1.6579850912094116
+    },
+    {
+      "task": "ag_news",
+      "step": 100,
+      "loss": 0.0835588350892067
+    },
+    {
+      "task": "ag_news",
+      "step": 150,
+      "loss": 0.5086649060249329
+    },
+    {
+      "task": "ag_news",
+      "step": 200,
+      "loss": 0.03491717204451561
+    },
+    {
+      "task": "ag_news",
+      "step": 250,
+      "loss": 0.1126502975821495
+    },
+    {
+      "task": "ag_news",
+      "step": 300,
+      "loss": 0.034011490643024445
+    },
+    {
+      "task": "ag_news",
+      "step": 350,
+      "loss": 0.0007982840179465711
+    },
+    {
+      "task": "ag_news",
+      "step": 400,
+      "loss": 0.5114144086837769
+    },
+    {
+      "task": "ag_news",
+      "step": 450,
+      "loss": 0.34015512466430664
+    },
+    {
+      "task": "ag_news",
+      "step": 500,
+      "loss": 0.3710818290710449
+    },
+    {
+      "task": "ag_news",
+      "step": 550,
+      "loss": 0.011473620310425758
+    },
+    {
+      "task": "ag_news",
+      "step": 600,
+      "loss": 0.4901801645755768
+    },
+    {
+      "task": "ag_news",
+      "step": 650,
+      "loss": 0.06318951398134232
+    },
+    {
+      "task": "ag_news",
+      "step": 700,
+      "loss": 0.36719152331352234
+    },
+    {
+      "task": "ag_news",
+      "step": 750,
+      "loss": 0.20863230526447296
+    },
+    {
+      "task": "ag_news",
+      "step": 800,
+      "loss": 0.009275383315980434
+    },
+    {
+      "task": "ag_news",
+      "step": 850,
+      "loss": 0.02136349491775036
+    },
+    {
+      "task": "ag_news",
+      "step": 900,
+      "loss": 0.025710193440318108
+    },
+    {
+      "task": "ag_news",
+      "step": 950,
+      "loss": 0.04866025224328041
+    },
+    {
+      "task": "ag_news",
+      "step": 1000,
+      "loss": 0.014599395915865898
+    }
+  ]
+}

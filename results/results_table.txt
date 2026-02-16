@@ -1,0 +1,12 @@
+DLOG Experiment Results
+Date: 2026-02-16T19:37:03.148154
+Model: google/t5gemma-2-270m-270m
+Tasks: ['sst2', 'ag_news']
+
+Metric                                 DLOG     Baseline
+--------------------------------------------------------
+Final Performance (FP)               0.0000       0.0000
+Average Performance (AP)             0.0000       0.0000
+Forgetting (FT)                      0.0000       0.0000
+Wall-clock (s)                      2348.53      1143.32
+Forward Passes                         4000         2000

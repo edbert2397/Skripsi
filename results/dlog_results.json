@@ -1,0 +1,304 @@
+{
+  "method": "DLOG",
+  "config": {
+    "projection_type": "memory_gradient",
+    "use_soft": true,
+    "use_hard": true,
+    "lambda_orth": 0.1,
+    "lora_rank": 8,
+    "ema_decay": 0.999,
+    "task_order": [
+      "sst2",
+      "ag_news"
+    ]
+  },
+  "cl_metrics": {
+    "Final Performance (FP)": 0.0,
+    "Average Performance (AP)": 0.0,
+    "Forgetting (FT)": 0.0,
+    "Performance Matrix": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "efficiency": {
+    "total_time_sec": 2348.53,
+    "forward_passes": 4000,
+    "projection_time_sec": 9.6805,
+    "projection_overhead_pct": 0.41,
+    "peak_memory_mb": 3296.2
+  },
+  "gradient_conflict": [],
+  "subspace_overlap": {
+    "mean_A_separation": 0.9150190022256639,
+    "mean_B_separation": 0.5087005787543835
+  },
+  "train_log": [
+    {
+      "task": "sst2",
+      "step": 50,
+      "task_loss": 13.435047149658203,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 100,
+      "task_loss": 1.3899853229522705,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 150,
+      "task_loss": 0.6057060956954956,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 200,
+      "task_loss": 0.4076891541481018,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 250,
+      "task_loss": 0.05217347294092178,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 300,
+      "task_loss": 0.8381624221801758,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 350,
+      "task_loss": 0.5539960861206055,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 400,
+      "task_loss": 0.5495905876159668,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 450,
+      "task_loss": 0.0007776166312396526,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 500,
+      "task_loss": 0.0024070157669484615,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 550,
+      "task_loss": 0.002316866535693407,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 600,
+      "task_loss": 0.0008501841221004725,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 650,
+      "task_loss": 0.0029496815986931324,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 700,
+      "task_loss": 0.03139428049325943,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 750,
+      "task_loss": 0.005321445409208536,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 800,
+      "task_loss": 0.010734477080404758,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 850,
+      "task_loss": 0.03870946541428566,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 900,
+      "task_loss": 0.006092562340199947,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 950,
+      "task_loss": 0.1410810500383377,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 1000,
+      "task_loss": 0.2316729873418808,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 50,
+      "task_loss": 5.031571388244629,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 100,
+      "task_loss": 5.639645099639893,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 150,
+      "task_loss": 6.056026458740234,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 200,
+      "task_loss": 5.054046630859375,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 250,
+      "task_loss": 6.159369945526123,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 300,
+      "task_loss": 4.623887062072754,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 350,
+      "task_loss": 4.833815574645996,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 400,
+      "task_loss": 4.938022136688232,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 450,
+      "task_loss": 5.8573317527771,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 500,
+      "task_loss": 5.763164520263672,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 550,
+      "task_loss": 5.294496536254883,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 600,
+      "task_loss": 6.752754211425781,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 650,
+      "task_loss": 6.05459451675415,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 700,
+      "task_loss": 5.346656322479248,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 750,
+      "task_loss": 6.394888877868652,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 800,
+      "task_loss": 5.048165321350098,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 850,
+      "task_loss": 6.0129780769348145,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 900,
+      "task_loss": 5.6208672523498535,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 950,
+      "task_loss": 4.741921424865723,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 1000,
+      "task_loss": 5.510283470153809,
+      "orth_loss": 0.0,
+      "leakage": 0.0
+    }
+  ]
+}

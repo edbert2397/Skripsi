@@ -1,0 +1,89 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    DLOG EXPERIMENT QUICK REFERENCE                           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📍 LOCATION
+   e:\Kuliah\sem8\skripsi\dlog\
+
+🚀 BASIC COMMANDS (run in dlog/ folder)
+
+   1. Quick test (2 min):
+      python run_experiment.py --smoke-test
+
+   2. Full experiment (30-45 min):
+      python run_experiment.py --steps 1000
+
+   3. Ablation study:
+      python run_experiment.py --ablation --steps 1000
+
+📊 OUTPUT FILES (in dlog/results/)
+
+   ✓ forgetting_comparison.png    - Bar chart: DLOG vs Baseline (FP & FT)
+   ✓ performance_matrix.png        - Heatmap: R[i][j] accuracy matrix
+   ✓ training_loss.png             - Loss curves over time
+   ✓ leakage.png                   - Leakage into protected subspace
+   ✓ efficiency_table.png          - Wall-clock, FLOPs, memory
+   ✓ results_table.txt             - Summary metrics (copy to thesis)
+   ✓ dlog_results.json             - Full DLOG results (programmatic)
+   ✓ baseline_results.json         - Full Baseline results
+
+🎯 KEY METRICS TO REPORT (for SuRe comparison)
+
+   DLOG (expected):
+   - Final Performance (FP):  0.75-0.85  (higher = better)
+   - Forgetting (FT):         0.05-0.15  (lower = better)
+
+   Baseline (expected):
+   - Final Performance (FP):  0.60-0.70
+   - Forgetting (FT):         0.20-0.35  (DLOG should beat this!)
+
+🔧 USEFUL OPTIONS
+
+   --model t5-base              Use smaller model (faster, 3-4GB VRAM)
+   --rank 16                    Increase LoRA rank (default: 8)
+   --lambda-orth 0.05           Change orthogonality weight (default: 0.1)
+   --projection parameter       Use parameter-subspace (default: memory_gradient)
+   --no-soft                    Disable soft constraint
+   --no-hard                    Disable hard constraint
+   --steps 2000                 More training steps
+   --cpu                        Force CPU (very slow, testing only)
+
+💡 VIBE CHECK (what to look for)
+
+   ✅ Leakage plot drops to ~0.00 (projection working!)
+   ✅ DLOG's R[1][0] ≈ R[0][0] (no forgetting on Task A)
+   ✅ Baseline's R[1][0] << R[0][0] (severe forgetting)
+   ✅ DLOG's FT < Baseline's FT (key thesis claim!)
+
+🐛 TROUBLESHOOTING
+
+   Problem: CUDA out of memory
+   → python run_experiment.py --model t5-base
+
+   Problem: Training stuck at 0%
+   → First run downloads datasets (~500MB), wait 2-5 min
+
+   Problem: ModuleNotFoundError
+   → pip install -r requirements.txt
+
+📝 FOR THESIS WRITEUP
+
+   1. Run full experiment:
+      python run_experiment.py --steps 1000
+
+   2. Copy results_table.txt metrics to your thesis table
+
+   3. Include plots:
+      - forgetting_comparison.png (main result)
+      - performance_matrix.png (heatmap visualization)
+      - leakage.png (mechanism proof)
+
+   4. Compare to SuRe paper Table 1 (Standard CL benchmark)
+
+⏱️ TIMING ESTIMATES (RTX GPU)
+
+   Smoke test:        ~2 min
+   Full (1k steps):   ~30-45 min
+   Ablation (5 runs): ~2-3 hours
+
+═══════════════════════════════════════════════════════════════════════════════
