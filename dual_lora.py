@@ -80,8 +80,8 @@ class DualLoRALinear(nn.Module):
         nn.init.kaiming_uniform_(self.A_slow, a=math.sqrt(5))
         nn.init.zeros_(self.B_slow)
 
-        # Fast — zero init (no contribution at start)
-        nn.init.zeros_(self.A_fast)
+        # Fast — break symmetry, zero init B_f so contribution is 0 at start, but A_f gets gradients
+        nn.init.kaiming_uniform_(self.A_fast, a=math.sqrt(5))
         nn.init.zeros_(self.B_fast)
 
     # ------------------------------------------------------------------

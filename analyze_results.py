@@ -2,14 +2,30 @@
 Check what accuracy we're actually computing
 """
 import json
+import os
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", type=str, default="google/t5gemma-2-1b-1b", 
+                    help="Model directory to analyze results from")
+args = parser.parse_args()
+
+model_dir = args.model.replace("/", "_")
+results_path = os.path.join("results", model_dir)
 
 # Load the results
-with open("results/dlog_results.json", "r") as f:
-    dlog = json.load(f)
+try:
+    with open(os.path.join(results_path, "dlog_results.json"), "r") as f:
+        dlog = json.load(f)
 
-with open("results/baseline_results.json", "r") as f:
-    baseline = json.load(f)
+    with open(os.path.join(results_path, "baseline_results.json"), "r") as f:
+        baseline = json.load(f)
+except FileNotFoundError as e:
+    print(f"Error: {e}")
+    print(f"Make sure you have run the experiment with this model first.")
+    exit(1)
 
+print(f"--- Analyzing results for model: {args.model} ---\n")
 print("DLOG Performance Matrix:")
 print(dlog["cl_metrics"]["Performance Matrix"])
 print(f"FP: {dlog['cl_metrics']['Final Performance (FP)']}")

@@ -1,0 +1,26 @@
+{
+  "method": "Baseline (Single LoRA + Replay)",
+  "cl_metrics": {
+    "Final Performance (FP)": 0.0,
+    "Average Performance (AP)": 0.0,
+    "Forgetting (FT)": 0.0,
+    "Performance Matrix": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "efficiency": {
+    "total_time_sec": 72.66,
+    "forward_passes": 20,
+    "projection_time_sec": 0.0,
+    "projection_overhead_pct": 0.0,
+    "peak_memory_mb": 5676.5
+  },
+  "train_log": []
+}

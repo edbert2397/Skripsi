@@ -1,0 +1,43 @@
+{
+  "method": "DLOG",
+  "config": {
+    "projection_type": "memory_gradient",
+    "use_soft": true,
+    "use_hard": true,
+    "lambda_orth": 0.1,
+    "lora_rank": 8,
+    "ema_decay": 0.999,
+    "task_order": [
+      "sst2",
+      "ag_news"
+    ]
+  },
+  "cl_metrics": {
+    "Final Performance (FP)": 0.0,
+    "Average Performance (AP)": 0.0,
+    "Forgetting (FT)": 0.0,
+    "Performance Matrix": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "efficiency": {
+    "total_time_sec": 97.56,
+    "forward_passes": 40,
+    "projection_time_sec": 0.5298,
+    "projection_overhead_pct": 0.54,
+    "peak_memory_mb": 5676.5
+  },
+  "gradient_conflict": [],
+  "subspace_overlap": {
+    "mean_A_separation": 0.9298878333802465,
+    "mean_B_separation": 0.5896423117646689
+  },
+  "train_log": []
+}

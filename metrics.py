@@ -237,8 +237,7 @@ class EfficiencyTracker:
 @torch.no_grad()
 def evaluate_accuracy(model, eval_loader, tokenizer, device="cuda", max_gen=16) -> float:
     """
-    Evaluate classification accuracy by generating from T5 and
-    matching against the true label text.
+    Evaluate sequence classification accuracy by taking the argmax of the logits.
     """
     model.eval()
     correct = 0
@@ -247,21 +246,18 @@ def evaluate_accuracy(model, eval_loader, tokenizer, device="cuda", max_gen=16) 
     for batch in eval_loader:
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
-        label_texts = batch["label_text"]  # list of strings
+        labels = batch["labels"].to(device)
 
-        # Generate
-        outputs = model.generate(
+        outputs = model(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            max_new_tokens=max_gen,
-            do_sample=False,
         )
-        preds = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-
-        for pred, label in zip(preds, label_texts):
-            if pred.strip().lower() == label.strip().lower():
-                correct += 1
-            total += 1
+        logits = outputs.logits
+        preds = logits.argmax(dim=-1)
+        
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
 
     model.train()
     return correct / max(total, 1)
+

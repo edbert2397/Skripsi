@@ -1,0 +1,304 @@
+{
+  "method": "DLOG",
+  "config": {
+    "projection_type": "memory_gradient",
+    "use_soft": true,
+    "use_hard": true,
+    "lambda_orth": 0.1,
+    "lora_rank": 8,
+    "ema_decay": 0.999,
+    "task_order": [
+      "sst2",
+      "ag_news"
+    ]
+  },
+  "cl_metrics": {
+    "Final Performance (FP)": 0.9259999999999999,
+    "Average Performance (AP)": 0.931,
+    "Forgetting (FT)": 0.010000000000000009,
+    "Performance Matrix": [
+      [
+        0.958,
+        0.248
+      ],
+      [
+        0.948,
+        0.904
+      ]
+    ]
+  },
+  "efficiency": {
+    "total_time_sec": 2772.54,
+    "forward_passes": 2200,
+    "projection_time_sec": 20.0868,
+    "projection_overhead_pct": 0.72,
+    "peak_memory_mb": 3679.0
+  },
+  "gradient_conflict": [],
+  "subspace_overlap": {
+    "mean_A_separation": 0.9835858635072198,
+    "mean_B_separation": 0.5835398507437536
+  },
+  "train_log": [
+    {
+      "task": "sst2",
+      "step": 50,
+      "task_loss": 0.8984375,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 100,
+      "task_loss": 0.6953125,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 150,
+      "task_loss": 0.0079345703125,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 200,
+      "task_loss": 0.005859375,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 250,
+      "task_loss": 0.004791259765625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 300,
+      "task_loss": 0.21484375,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 350,
+      "task_loss": 1.4140625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 400,
+      "task_loss": 0.0177001953125,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 450,
+      "task_loss": 0.478515625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 500,
+      "task_loss": 0.004425048828125,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 550,
+      "task_loss": 0.322265625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 600,
+      "task_loss": 0.55859375,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 650,
+      "task_loss": 0.8125,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 700,
+      "task_loss": 0.048828125,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 750,
+      "task_loss": 0.462890625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 800,
+      "task_loss": 0.01104736328125,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 850,
+      "task_loss": 1.0,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 900,
+      "task_loss": 0.474609375,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 950,
+      "task_loss": 0.234375,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 1000,
+      "task_loss": 0.00531005859375,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 50,
+      "task_loss": 4.90625,
+      "orth_loss": 2.4588897228240967,
+      "leakage": 0.38970511300223215
+    },
+    {
+      "task": "ag_news",
+      "step": 100,
+      "task_loss": 1.4609375,
+      "orth_loss": 1.2114720344543457,
+      "leakage": 0.40835135323660715
+    },
+    {
+      "task": "ag_news",
+      "step": 150,
+      "task_loss": 0.796875,
+      "orth_loss": 0.5448083877563477,
+      "leakage": 0.3730991908482143
+    },
+    {
+      "task": "ag_news",
+      "step": 200,
+      "task_loss": 0.380859375,
+      "orth_loss": 0.3411111831665039,
+      "leakage": 0.3988560267857143
+    },
+    {
+      "task": "ag_news",
+      "step": 250,
+      "task_loss": 0.302734375,
+      "orth_loss": 0.23270654678344727,
+      "leakage": 0.39937046595982145
+    },
+    {
+      "task": "ag_news",
+      "step": 300,
+      "task_loss": 0.0830078125,
+      "orth_loss": 0.17162346839904785,
+      "leakage": 0.41555350167410715
+    },
+    {
+      "task": "ag_news",
+      "step": 350,
+      "task_loss": 0.025634765625,
+      "orth_loss": 0.15057706832885742,
+      "leakage": 0.41912841796875
+    },
+    {
+      "task": "ag_news",
+      "step": 400,
+      "task_loss": 0.1923828125,
+      "orth_loss": 0.13943171501159668,
+      "leakage": 0.4044189453125
+    },
+    {
+      "task": "ag_news",
+      "step": 450,
+      "task_loss": 0.138671875,
+      "orth_loss": 0.12951135635375977,
+      "leakage": 0.4435206821986607
+    },
+    {
+      "task": "ag_news",
+      "step": 500,
+      "task_loss": 0.375,
+      "orth_loss": 0.12879633903503418,
+      "leakage": 0.44490269252232145
+    },
+    {
+      "task": "ag_news",
+      "step": 550,
+      "task_loss": 0.1669921875,
+      "orth_loss": 0.12981855869293213,
+      "leakage": 0.4204188755580357
+    },
+    {
+      "task": "ag_news",
+      "step": 600,
+      "task_loss": 0.041259765625,
+      "orth_loss": 0.13154268264770508,
+      "leakage": 0.38084193638392855
+    },
+    {
+      "task": "ag_news",
+      "step": 650,
+      "task_loss": 0.76171875,
+      "orth_loss": 0.13460516929626465,
+      "leakage": 0.40562220982142855
+    },
+    {
+      "task": "ag_news",
+      "step": 700,
+      "task_loss": 0.2197265625,
+      "orth_loss": 0.14069819450378418,
+      "leakage": 0.39702933175223215
+    },
+    {
+      "task": "ag_news",
+      "step": 750,
+      "task_loss": 0.068359375,
+      "orth_loss": 0.14793145656585693,
+      "leakage": 0.62646484375
+    },
+    {
+      "task": "ag_news",
+      "step": 800,
+      "task_loss": 0.01556396484375,
+      "orth_loss": 0.15471112728118896,
+      "leakage": 0.4315883091517857
+    },
+    {
+      "task": "ag_news",
+      "step": 850,
+      "task_loss": 0.83984375,
+      "orth_loss": 0.16161394119262695,
+      "leakage": 0.42354910714285715
+    },
+    {
+      "task": "ag_news",
+      "step": 900,
+      "task_loss": 0.1220703125,
+      "orth_loss": 0.1681917905807495,
+      "leakage": 0.42238071986607145
+    },
+    {
+      "task": "ag_news",
+      "step": 950,
+      "task_loss": 0.345703125,
+      "orth_loss": 0.17446041107177734,
+      "leakage": 0.3949192592075893
+    },
+    {
+      "task": "ag_news",
+      "step": 1000,
+      "task_loss": 0.0174560546875,
+      "orth_loss": 0.18011856079101562,
+      "leakage": 0.4218837193080357
+    }
+  ]
+}

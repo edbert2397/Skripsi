@@ -33,24 +33,20 @@ class CLTaskDataset(Dataset):
         tokenizer: PreTrainedTokenizerBase,
         split: str = "train",
         max_input_length: int = 256,
-        max_target_length: int = 16,
         max_samples: Optional[int] = None,
     ):
         self.task_name = task_name
         self.tokenizer = tokenizer
         self.max_input_length = max_input_length
-        self.max_target_length = max_target_length
 
         cfg = DATASET_CONFIGS[task_name]
         self.cfg = cfg
 
         # Load dataset
         if cfg["hf_subset"]:
-            ds = load_dataset(cfg["hf_name"], cfg["hf_subset"], split=split,
-                              trust_remote_code=True)
+            ds = load_dataset(cfg["hf_name"], cfg["hf_subset"], split=split)
         else:
-            ds = load_dataset(cfg["hf_name"], split=split,
-                              trust_remote_code=True)
+            ds = load_dataset(cfg["hf_name"], split=split)
 
         if max_samples and len(ds) > max_samples:
             ds = ds.shuffle(seed=42).select(range(max_samples))
@@ -66,7 +62,7 @@ class CLTaskDataset(Dataset):
         input_text = self.cfg["prompt_template"].format(
             text=item[self.cfg["input_col"]]
         )
-        target_text = self.class_names[item[self.cfg["label_col"]]]
+        label_idx = item[self.cfg["label_col"]]
 
         inputs = self.tokenizer(
             input_text,
@@ -75,19 +71,10 @@ class CLTaskDataset(Dataset):
             truncation=True,
             return_tensors="pt",
         )
-        targets = self.tokenizer(
-            target_text,
-            max_length=self.max_target_length,
-            padding="max_length",
-            truncation=True,
-            return_tensors="pt",
-        )
 
         input_ids = inputs.input_ids.squeeze(0)
         attention_mask = inputs.attention_mask.squeeze(0)
-        labels = targets.input_ids.squeeze(0)
-        # Replace padding token id with -100 for loss computation
-        labels[labels == self.tokenizer.pad_token_id] = -100
+        labels = torch.tensor(label_idx, dtype=torch.long)
 
         return {
             "input_ids": input_ids,
@@ -208,12 +195,13 @@ class CLEvalDataset(Dataset):
         self.cfg = cfg
         self.class_names = cfg["class_names"]
 
+        # Some datasets (e.g. GLUE SST-2) don't have a 'test' split with labels
+        eval_split = cfg.get("eval_split", split)
+
         if cfg["hf_subset"]:
-            ds = load_dataset(cfg["hf_name"], cfg["hf_subset"], split=split,
-                              trust_remote_code=True)
+            ds = load_dataset(cfg["hf_name"], cfg["hf_subset"], split=eval_split)
         else:
-            ds = load_dataset(cfg["hf_name"], split=split,
-                              trust_remote_code=True)
+            ds = load_dataset(cfg["hf_name"], split=eval_split)
 
         if max_samples and len(ds) > max_samples:
             ds = ds.shuffle(seed=42).select(range(max_samples))
@@ -239,8 +227,7 @@ class CLEvalDataset(Dataset):
         return {
             "input_ids": inputs.input_ids.squeeze(0),
             "attention_mask": inputs.attention_mask.squeeze(0),
-            "label_idx": label_idx,
-            "label_text": self.class_names[label_idx],
+            "labels": torch.tensor(label_idx, dtype=torch.long),
         }
 
 
@@ -267,7 +254,6 @@ def build_task_dataloaders(
         train_ds = CLTaskDataset(
             task_name, tokenizer, split="train",
             max_input_length=config.max_input_length,
-            max_target_length=config.max_target_length,
             max_samples=max_train_samples,
         )
         eval_ds = CLEvalDataset(

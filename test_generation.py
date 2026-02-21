@@ -7,19 +7,20 @@ from data_pipeline import build_task_dataloaders
 from config import DLOGConfig
 
 print("Loading model and tokenizer...")
-tokenizer = AutoTokenizer.from_pretrained("google/t5gemma-2-270m-270m")
-model = AutoModelForSeq2SeqLM.from_pretrained("google/t5gemma-2-270m-270m")
+tokenizer = AutoTokenizer.from_pretrained("google/t5gemma-2-1b-1b")
+model = AutoModelForSeq2SeqLM.from_pretrained("google/t5gemma-2-1b-1b")
 model = model.to("cuda")
 model.eval()
 
 print("Building evaluation dataloader...")
 config = DLOGConfig()
-_, eval_loaders = build_task_dataloaders(
+config.task_order = ["sst2"]
+config.batch_size = 4
+train_loaders, eval_loaders = build_task_dataloaders(
+    config=config,
     tokenizer=tokenizer,
-    task_order=["sst2"],
-    batch_size=4,
-    max_samples_train=50,
-    max_samples_eval=20,
+    max_train_samples=50,
+    max_eval_samples=20,
 )
 
 print("\nTesting generation on SST-2...")
@@ -45,6 +46,7 @@ for i, batch in enumerate(eval_loader):
             do_sample=False,
         )
     preds = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    print(f"DEBUG: outputs.shape = {outputs.shape}")
     
     print(f"\nBatch {i+1}:")
     for j, (pred, label) in enumerate(zip(preds, label_texts)):

@@ -7,7 +7,7 @@ Also provides a baseline wrapper with single LoRA.
 import copy
 import torch
 import torch.nn as nn
-from transformers import AutoModelForSeq2SeqLM, AutoConfig
+from transformers import AutoModelForSequenceClassification, AutoConfig
 from typing import List, Dict, Tuple
 
 from dual_lora import DualLoRALinear, SingleLoRALinear
@@ -54,16 +54,23 @@ class DLOGModel(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.t5 = AutoModelForSeq2SeqLM.from_pretrained(
-            config.model_name
+        self.base_model = AutoModelForSequenceClassification.from_pretrained(
+            config.model_name,
+            num_labels=4,
+            torch_dtype="auto", # Use bfloat16/float16 to save 50% VRAM
         )
+        if self.base_model.config.pad_token_id is None:
+            self.base_model.config.pad_token_id = self.base_model.config.eos_token_id
         
         # Enable gradient checkpointing to save memory (trades compute for memory)
-        self.t5.gradient_checkpointing_enable()
+        self.base_model.gradient_checkpointing_enable()
 
-        # Freeze all original parameters
-        for p in self.t5.parameters():
-            p.requires_grad = False
+        # Freeze all original parameters, but keep the classification head trainable
+        for name, p in self.base_model.named_parameters():
+            if "score" in name:
+                p.requires_grad = True
+            else:
+                p.requires_grad = False
 
         # Inject Dual-LoRA layers
         self._dual_lora_keys: List[str] = []
@@ -71,9 +78,9 @@ class DLOGModel(nn.Module):
 
     # ------------------------------------------------------------------
     def _inject_dual_lora(self, target_names: List[str], rank: int, alpha: float):
-        keys = _find_linear_modules(self.t5, target_names)
+        keys = _find_linear_modules(self.base_model, target_names)
         for key in keys:
-            parent, old_linear, attr = _get_submodules(self.t5, key)
+            parent, old_linear, attr = _get_submodules(self.base_model, key)
             dual = DualLoRALinear(
                 in_features=old_linear.in_features,
                 out_features=old_linear.out_features,
@@ -99,7 +106,7 @@ class DLOGModel(nn.Module):
         """Return all injected DualLoRALinear modules."""
         layers = []
         for key in self._dual_lora_keys:
-            _, mod, _ = _get_submodules(self.t5, key)
+            _, mod, _ = _get_submodules(self.base_model, key)
             layers.append(mod)
         return layers
 
@@ -118,8 +125,12 @@ class DLOGModel(nn.Module):
         return params
 
     def get_all_lora_params(self) -> List[nn.Parameter]:
-        """Return all LoRA params (Fast + Slow)."""
-        return self.get_fast_params() + self.get_slow_params()
+        """Return all LoRA params (Fast + Slow) + Classification Head."""
+        params = self.get_fast_params() + self.get_slow_params()
+        for name, p in self.base_model.named_parameters():
+            if "score" in name:
+                params.append(p)
+        return params
 
     # ------------------------------------------------------------------
     # EMA consolidation
@@ -149,10 +160,7 @@ class DLOGModel(nn.Module):
     # Forward (delegates to T5)
     # ------------------------------------------------------------------
     def forward(self, **kwargs):
-        return self.t5(**kwargs)
-
-    def generate(self, **kwargs):
-        return self.t5.generate(**kwargs)
+        return self.base_model(**kwargs)
 
 
 # ======================================================================
@@ -166,21 +174,31 @@ class BaselineModel(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.t5 = AutoModelForSeq2SeqLM.from_pretrained(config.model_name)
+        self.base_model = AutoModelForSequenceClassification.from_pretrained(
+            config.model_name,
+            num_labels=4,
+            torch_dtype="auto",
+        )
+        if self.base_model.config.pad_token_id is None:
+            self.base_model.config.pad_token_id = self.base_model.config.eos_token_id
         
         # Enable gradient checkpointing to save memory
-        self.t5.gradient_checkpointing_enable()
+        self.base_model.gradient_checkpointing_enable()
 
-        for p in self.t5.parameters():
-            p.requires_grad = False
+        # Freeze all original parameters, but keep the classification head trainable
+        for name, p in self.base_model.named_parameters():
+            if "score" in name:
+                p.requires_grad = True
+            else:
+                p.requires_grad = False
 
         self._lora_keys: List[str] = []
         self._inject_single_lora(config.target_modules, config.lora_rank, config.lora_alpha)
 
     def _inject_single_lora(self, target_names: List[str], rank: int, alpha: float):
-        keys = _find_linear_modules(self.t5, target_names)
+        keys = _find_linear_modules(self.base_model, target_names)
         for key in keys:
-            parent, old_linear, attr = _get_submodules(self.t5, key)
+            parent, old_linear, attr = _get_submodules(self.base_model, key)
             single = SingleLoRALinear(
                 in_features=old_linear.in_features,
                 out_features=old_linear.out_features,
@@ -201,12 +219,15 @@ class BaselineModel(nn.Module):
     def get_lora_params(self) -> List[nn.Parameter]:
         params = []
         for key in self._lora_keys:
-            _, mod, _ = _get_submodules(self.t5, key)
+            _, mod, _ = _get_submodules(self.base_model, key)
             params.extend([mod.A, mod.B])
+        
+        # Add classification head params
+        for name, p in self.base_model.named_parameters():
+            if "score" in name:
+                params.append(p)
+                
         return params
 
     def forward(self, **kwargs):
-        return self.t5(**kwargs)
-
-    def generate(self, **kwargs):
-        return self.t5.generate(**kwargs)
+        return self.base_model(**kwargs)

@@ -389,8 +389,8 @@ def main():
                         help="Quick sanity check with minimal steps")
     parser.add_argument("--ablation", action="store_true",
                         help="Run ablation study")
-    parser.add_argument("--model", type=str, default="google/t5gemma-2-270m-270m",
-                        help="Model name (default: google/t5gemma-2-270m-270m)")
+    parser.add_argument("--model", type=str, default="google/t5gemma-2-1b-1b",
+                        help="Model name (default: google/t5gemma-2-1b-1b)")
     parser.add_argument("--rank", type=int, default=8,
                         help="LoRA rank (default: 8)")
     parser.add_argument("--steps", type=int, default=None,
@@ -420,7 +420,7 @@ def main():
         use_hard_constraint=not args.no_hard,
         output_dir=args.output_dir,
         device="cpu" if args.cpu else ("cuda" if torch.cuda.is_available() else "cpu"),
-        fp16=False if args.cpu else torch.cuda.is_available(),
+        fp16=False,  # Disabled: multi-backward loop incompatible with GradScaler
     )
 
     if args.steps:

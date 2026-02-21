@@ -108,7 +108,7 @@ Compares 5 variants:
 
 ## Output Files
 
-All saved to `dlog/results/`:
+All saved to `dlog/results/<model_name>/`:
 
 | File | What It Shows |
 |------|---------------|

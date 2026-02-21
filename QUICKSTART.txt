@@ -16,7 +16,7 @@
    3. Ablation study:
       python run_experiment.py --ablation --steps 1000
 
-📊 OUTPUT FILES (in dlog/results/)
+📊 OUTPUT FILES (in dlog/results/<model_name>/)
 
    ✓ forgetting_comparison.png    - Bar chart: DLOG vs Baseline (FP & FT)
    ✓ performance_matrix.png        - Heatmap: R[i][j] accuracy matrix

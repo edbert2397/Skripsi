@@ -139,11 +139,10 @@ class DLOGTrainer:
         )
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
-            num_warmup_steps=self.config.warmup_steps,
+            num_warmup_steps=min(self.config.warmup_steps, max_steps // 10),
             num_training_steps=max_steps,
         )
-        # Disable GradScaler - not supported with BFloat16 (T5Gemma-2)
-        scaler = GradScaler(enabled=False)
+        scaler = GradScaler(enabled=self.config.fp16)
 
         # --- Training loop ---
         self.model.train()
@@ -172,7 +171,31 @@ class DLOGTrainer:
                         device=self.device,
                     )
 
-                # --- 2. Forward + Loss ---
+                # --- 2. Pass 1: Memory-gradient basis update (Only if using memory_gradient) ---
+                is_projection_step = (step % self.config.project_every_k == 0)
+                if (
+                    not is_first_task
+                    and self.config.use_hard_constraint
+                    and self.config.projection_type == "memory_gradient"
+                    and replay_batch is not None
+                    and is_projection_step
+                ):
+                    optimizer.zero_grad()
+                    with autocast(device_type="cuda", enabled=self.config.fp16):
+                        mem_outputs = self.model(
+                            input_ids=replay_batch["input_ids"],
+                            attention_mask=replay_batch["attention_mask"],
+                            labels=replay_batch["labels"],
+                        )
+                    scaler.scale(mem_outputs.loss).backward()
+                    scaler.unscale_(optimizer)
+                    self.efficiency.record_forward()
+                    
+                    # Accumulate memory-gradient basis before main task backward
+                    fast_params = self.model.get_fast_params()
+                    self.projector.accumulate(fast_params)
+
+                # --- 3. Pass 2: Main Task Forward + Backward ---
                 optimizer.zero_grad()
 
                 with autocast(device_type="cuda", enabled=self.config.fp16):
@@ -193,47 +216,9 @@ class DLOGTrainer:
 
                 self.efficiency.record_forward()
 
-                # --- 3. Backward ---
+                # --- 4. Backward & Gradients ready for projection ---
                 scaler.scale(total_loss).backward()
                 scaler.unscale_(optimizer)
-
-                # --- 4. Memory-gradient accumulation (for projection Option 2) ---
-                if (
-                    not is_first_task
-                    and self.config.use_hard_constraint
-                    and self.config.projection_type == "memory_gradient"
-                    and replay_batch is not None
-                ):
-                    # Compute gradients on replay data separately for subspace
-                    optimizer.zero_grad()
-                    with autocast(device_type="cuda", enabled=self.config.fp16):
-                        mem_outputs = self.model(
-                            input_ids=replay_batch["input_ids"],
-                            attention_mask=replay_batch["attention_mask"],
-                            labels=replay_batch["labels"],
-                        )
-                    scaler.scale(mem_outputs.loss).backward()
-                    scaler.unscale_(optimizer)
-                    self.efficiency.record_forward()
-
-                    # Accumulate memory gradients
-                    fast_params = self.model.get_fast_params()
-                    self.projector.accumulate(fast_params)
-
-                    # Re-compute task gradients for projection
-                    optimizer.zero_grad()
-                    with autocast(device_type="cuda", enabled=self.config.fp16):
-                        outputs2 = self.model(
-                            input_ids=combined_batch["input_ids"],
-                            attention_mask=combined_batch["attention_mask"],
-                            labels=combined_batch["labels"],
-                        )
-                        loss2 = outputs2.loss
-                        if self.config.use_soft_constraint:
-                            loss2 = loss2 + self.config.lambda_orth * compute_orth_loss(dual_layers)
-                    scaler.scale(loss2).backward()
-                    scaler.unscale_(optimizer)
-                    self.efficiency.record_forward()
 
                 # --- 5. Hard orthogonal projection ---
                 if (
@@ -381,8 +366,7 @@ class BaselineTrainer:
         scheduler = get_linear_schedule_with_warmup(
             optimizer, self.config.warmup_steps, max_steps,
         )
-        # Disable GradScaler - not supported with BFloat16 (T5Gemma-2)
-        scaler = GradScaler(enabled=False)
+        scaler = GradScaler(enabled=self.config.fp16)
 
         self.model.train()
         step = 0
