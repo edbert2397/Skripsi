@@ -11,6 +11,7 @@ import sys
 import json
 import argparse
 import random
+import gc
 import torch
 import numpy as np
 import matplotlib
@@ -19,10 +20,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from datetime import datetime
 from transformers import AutoTokenizer
+from typing import Optional
 
 from config import DLOGConfig
 from dlog_model import DLOGModel, BaselineModel
-from trainer import DLOGTrainer, BaselineTrainer
+from trainer import DLOGTrainer, BaselineTrainer, SuReTrainer
 from data_pipeline import build_task_dataloaders
 from metrics import compute_all_subspace_overlaps
 
@@ -38,14 +40,17 @@ def set_seed(seed: int):
 # ======================================================================
 # Plotting utilities
 # ======================================================================
-def plot_results(dlog_results: dict, baseline_results: dict, output_dir: str):
+def plot_results(dlog_results: dict, baseline_results: dict, sure_results: Optional[dict], output_dir: str):
     """Generate comparison plots."""
     os.makedirs(output_dir, exist_ok=True)
     sns.set_theme(style="whitegrid", font_scale=1.2)
 
     # --- 1. Forgetting Comparison Bar Chart ---
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(10, 5))
     methods = ["DLOG", "Baseline\n(Single LoRA)"]
+    if sure_results:
+        methods.append("SuRe-Style")
+
     fp_vals = [
         dlog_results["cl_metrics"]["Final Performance (FP)"],
         baseline_results["cl_metrics"]["Final Performance (FP)"],
@@ -54,13 +59,16 @@ def plot_results(dlog_results: dict, baseline_results: dict, output_dir: str):
         dlog_results["cl_metrics"]["Forgetting (FT)"],
         baseline_results["cl_metrics"]["Forgetting (FT)"],
     ]
+    if sure_results:
+        fp_vals.append(sure_results["cl_metrics"]["Final Performance (FP)"])
+        ft_vals.append(sure_results["cl_metrics"]["Forgetting (FT)"])
 
     x = np.arange(len(methods))
     width = 0.35
     bars1 = ax.bar(x - width/2, fp_vals, width, label="Final Perf (FP) ↑", color="#4CAF50")
     bars2 = ax.bar(x + width/2, ft_vals, width, label="Forgetting (FT) ↓", color="#F44336")
     ax.set_ylabel("Score")
-    ax.set_title("DLOG vs Baseline: Performance & Forgetting")
+    ax.set_title("DLOG vs Baselines: Performance & Forgetting")
     ax.set_xticks(x)
     ax.set_xticklabels(methods)
     ax.legend()
@@ -71,7 +79,8 @@ def plot_results(dlog_results: dict, baseline_results: dict, output_dir: str):
     plt.close()
 
     # --- 2. Training Loss over Steps ---
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    num_plots = 3 if sure_results else 2
+    fig, axes = plt.subplots(1, num_plots, figsize=(18 if sure_results else 14, 5))
 
     # DLOG loss
     dlog_steps = [e["step"] for e in dlog_results["train_log"]]
@@ -93,6 +102,16 @@ def plot_results(dlog_results: dict, baseline_results: dict, output_dir: str):
     axes[1].set_xlabel("Step")
     axes[1].set_ylabel("Loss")
     axes[1].legend()
+
+    # SuRe loss
+    if sure_results:
+        sr_steps = [e["step"] for e in sure_results["train_log"]]
+        sr_losses = [e.get("loss", e.get("task_loss", 0)) for e in sure_results["train_log"]]
+        axes[2].plot(sr_steps, sr_losses, label="Loss", color="#E91E63")
+        axes[2].set_title("SuRe-Style Training")
+        axes[2].set_xlabel("Step")
+        axes[2].set_ylabel("Loss")
+        axes[2].legend()
 
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "training_loss.png"), dpi=150)
@@ -116,29 +135,43 @@ def plot_results(dlog_results: dict, baseline_results: dict, output_dir: str):
         plt.close()
 
     # --- 4. Efficiency Comparison Table ---
-    fig, ax = plt.subplots(figsize=(10, 3))
+    fig, ax = plt.subplots(figsize=(10, 3 if not sure_results else 4))
     ax.axis("off")
-    table_data = [
-        ["Metric", "DLOG", "Baseline"],
-        ["Wall-clock (s)",
+    
+    headers = ["Metric", "DLOG", "Baseline"]
+    if sure_results: headers.append("SuRe")
+
+    table_data = [headers]
+    table_data.append([
+         "Wall-clock (s)",
          str(dlog_results["efficiency"]["total_time_sec"]),
-         str(baseline_results["efficiency"]["total_time_sec"])],
-        ["Forward Passes",
+         str(baseline_results["efficiency"]["total_time_sec"])
+    ] + ([str(sure_results["efficiency"]["total_time_sec"])] if sure_results else []))
+    
+    table_data.append([
+         "Forward Passes",
          str(dlog_results["efficiency"]["forward_passes"]),
-         str(baseline_results["efficiency"]["forward_passes"])],
-        ["Projection Overhead %",
+         str(baseline_results["efficiency"]["forward_passes"])
+    ] + ([str(sure_results["efficiency"]["forward_passes"])] if sure_results else []))
+    
+    table_data.append([
+         "Projection Overhead %",
          str(dlog_results["efficiency"]["projection_overhead_pct"]),
-         "N/A"],
-        ["Peak Memory (MB)",
+         "N/A"
+    ] + (["N/A"] if sure_results else []))
+    
+    table_data.append([
+         "Peak Memory (MB)",
          str(dlog_results["efficiency"]["peak_memory_mb"]),
-         str(baseline_results["efficiency"]["peak_memory_mb"])],
-    ]
+         str(baseline_results["efficiency"]["peak_memory_mb"])
+    ] + ([str(sure_results["efficiency"]["peak_memory_mb"])] if sure_results else []))
+    
     table = ax.table(cellText=table_data, loc="center", cellLoc="center")
     table.auto_set_font_size(False)
     table.set_fontsize(11)
     table.scale(1.2, 1.5)
     # Header styling
-    for j in range(3):
+    for j in range(len(headers)):
         table[0, j].set_facecolor("#37474F")
         table[0, j].set_text_props(color="white", fontweight="bold")
     plt.title("Efficiency Comparison", fontsize=14, fontweight="bold", pad=20)
@@ -147,14 +180,16 @@ def plot_results(dlog_results: dict, baseline_results: dict, output_dir: str):
     plt.close()
 
     # --- 5. Performance Matrix Heatmaps ---
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig, axes = plt.subplots(1, num_plots, figsize=(18 if sure_results else 14, 5))
     task_names_short = [t.replace("_", "\n") for t in dlog_results.get("config", {}).get("task_order", ["T1", "T2", "T3", "T4"])]
     if len(task_names_short) != len(dlog_results["cl_metrics"]["Performance Matrix"]):
         task_names_short = [f"T{i+1}" for i in range(len(dlog_results["cl_metrics"]["Performance Matrix"]))]
 
-    for ax_idx, (results, title) in enumerate([
-        (dlog_results, "DLOG"), (baseline_results, "Baseline")
-    ]):
+    plot_configs = [(dlog_results, "DLOG"), (baseline_results, "Baseline")]
+    if sure_results:
+        plot_configs.append((sure_results, "SuRe-Style"))
+
+    for ax_idx, (results, title) in enumerate(plot_configs):
         R = np.array(results["cl_metrics"]["Performance Matrix"])
         sns.heatmap(
             R, annot=True, fmt=".2f", cmap="YlGn",
@@ -220,7 +255,11 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
 
     # Cleanup GPU memory
     del dlog_model, dlog_trainer
-    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    import gc
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
 
     # =============================================
     # Experiment 2: Baseline (Single LoRA + Replay)
@@ -231,13 +270,39 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
 
     set_seed(config.seed)  # Reset seed for fair comparison
 
+    print("Starting Experiment 2 loading...")
     baseline_model = BaselineModel(config)
     baseline_trainer = BaselineTrainer(config, baseline_model, tokenizer)
     baseline_trainer.train_all_tasks(train_loaders, eval_loaders, max_steps_override=max_steps)
     baseline_results = baseline_trainer.get_results()
 
     del baseline_model, baseline_trainer
-    torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+
+    # =============================================
+    # Experiment 3: SuRe-Style (SuRe)
+    # =============================================
+    print("\n" + "="*60)
+    print("  EXPERIMENT 3: SuRe-Style (SOTA/Upper Bound)")
+    print("="*60)
+
+    set_seed(config.seed)
+
+    print("Starting Experiment 3 loading...")
+    sure_model = DLOGModel(config) # SuRe uses Dual-LoRA+EMA
+    sure_trainer = SuReTrainer(config, sure_model, tokenizer)
+    sure_trainer.train_all_tasks(train_loaders, eval_loaders, max_steps_override=max_steps)
+    sure_results = sure_trainer.get_results()
+
+    del sure_model, sure_trainer
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+
 
     # =============================================
     # Results
@@ -246,7 +311,7 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
     print("  RESULTS SUMMARY")
     print("#"*60)
 
-    for name, res in [("DLOG", dlog_results), ("Baseline", baseline_results)]:
+    for name, res in [("DLOG", dlog_results), ("Baseline", baseline_results), ("SuRe", sure_results)]:
         print(f"\n  {name}:")
         print(f"    Final Performance (FP): {res['cl_metrics']['Final Performance (FP)']:.4f}")
         print(f"    Average Performance (AP): {res['cl_metrics']['Average Performance (AP)']:.4f}")
@@ -266,11 +331,11 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
 
     with open(os.path.join(output_dir, "dlog_results.json"), "w") as f:
         json.dump(dlog_results, f, indent=2, default=str)
-    with open(os.path.join(output_dir, "baseline_results.json"), "w") as f:
-        json.dump(baseline_results, f, indent=2, default=str)
+    with open(os.path.join(output_dir, "sure_results.json"), "w") as f:
+        json.dump(sure_results, f, indent=2, default=str)
 
     # Generate plots
-    plot_results(dlog_results, baseline_results, output_dir)
+    plot_results(dlog_results, baseline_results, sure_results, output_dir)
 
     # Save summary table
     with open(os.path.join(output_dir, "results_table.txt"), "w") as f:
@@ -278,23 +343,28 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
         f.write(f"Date: {datetime.now().isoformat()}\n")
         f.write(f"Model: {config.model_name}\n")
         f.write(f"Tasks: {config.task_order}\n\n")
-        f.write(f"{'Metric':<30} {'DLOG':>12} {'Baseline':>12}\n")
-        f.write("-" * 56 + "\n")
+        f.write(f"{'Metric':<30} {'DLOG':>12} {'Baseline':>12} {'SuRe':>12}\n")
+        f.write("-" * 70 + "\n")
         f.write(f"{'Final Performance (FP)':<30} "
                 f"{dlog_results['cl_metrics']['Final Performance (FP)']:>12.4f} "
-                f"{baseline_results['cl_metrics']['Final Performance (FP)']:>12.4f}\n")
+                f"{baseline_results['cl_metrics']['Final Performance (FP)']:>12.4f} "
+                f"{sure_results['cl_metrics']['Final Performance (FP)']:>12.4f}\n")
         f.write(f"{'Average Performance (AP)':<30} "
                 f"{dlog_results['cl_metrics']['Average Performance (AP)']:>12.4f} "
-                f"{baseline_results['cl_metrics']['Average Performance (AP)']:>12.4f}\n")
+                f"{baseline_results['cl_metrics']['Average Performance (AP)']:>12.4f} "
+                f"{sure_results['cl_metrics']['Average Performance (AP)']:>12.4f}\n")
         f.write(f"{'Forgetting (FT)':<30} "
                 f"{dlog_results['cl_metrics']['Forgetting (FT)']:>12.4f} "
-                f"{baseline_results['cl_metrics']['Forgetting (FT)']:>12.4f}\n")
+                f"{baseline_results['cl_metrics']['Forgetting (FT)']:>12.4f} "
+                f"{sure_results['cl_metrics']['Forgetting (FT)']:>12.4f}\n")
         f.write(f"{'Wall-clock (s)':<30} "
                 f"{dlog_results['efficiency']['total_time_sec']:>12} "
-                f"{baseline_results['efficiency']['total_time_sec']:>12}\n")
+                f"{baseline_results['efficiency']['total_time_sec']:>12} "
+                f"{sure_results['efficiency']['total_time_sec']:>12}\n")
         f.write(f"{'Forward Passes':<30} "
                 f"{dlog_results['efficiency']['forward_passes']:>12} "
-                f"{baseline_results['efficiency']['forward_passes']:>12}\n")
+                f"{baseline_results['efficiency']['forward_passes']:>12} "
+                f"{sure_results['efficiency']['forward_passes']:>12}\n")
 
     print(f"\n  Results saved to {output_dir}/")
     return dlog_results, baseline_results

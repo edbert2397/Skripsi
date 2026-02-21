@@ -28,6 +28,7 @@ from orthogonal_gating import (
 )
 from data_pipeline import (
     ReservoirReplayBuffer,
+    SurpriseReplayBuffer,
     create_mixed_batch,
     build_task_dataloaders,
 )
@@ -417,6 +418,148 @@ class BaselineTrainer:
     def get_results(self) -> Dict:
         return {
             "method": "Baseline (Single LoRA + Replay)",
+            "cl_metrics": self.cl_metrics.summary(),
+            "efficiency": self.efficiency.summary(),
+            "train_log": self.train_log,
+        }
+
+
+# ======================================================================
+# SuReTrainer (SuRe-Style)
+# ======================================================================
+class SuReTrainer:
+    """
+    SuRe (Surprise-prioritised Replay + EMA integration).
+    Uses DLOGModel for Dual-LoRA and EMA, but no orthogonal gating.
+    """
+
+    def __init__(self, config: DLOGConfig, model: DLOGModel, tokenizer):
+        self.config = config
+        self.model = model
+        self.tokenizer = tokenizer
+        self.device = config.device
+
+        self.model.to(self.device)
+        self.replay_buffer = SurpriseReplayBuffer(config.replay_buffer_size)
+
+        self.cl_metrics = CLMetricsTracker(config.task_order)
+        self.efficiency = EfficiencyTracker()
+        self.train_log: List[Dict] = []
+
+    def train_all_tasks(
+        self,
+        train_loaders: Dict,
+        eval_loaders: Dict,
+        max_steps_override: Optional[int] = None,
+    ):
+        max_steps = max_steps_override or self.config.num_train_steps_per_task
+        self.efficiency.start_timer()
+
+        for task_idx, task_name in enumerate(self.config.task_order):
+            print(f"\n{'='*60}")
+            print(f"  [SuRe-Style] Task {task_idx+1}/{len(self.config.task_order)}: {task_name}")
+            print(f"{'='*60}")
+
+            self._train_single_task(task_idx, task_name, train_loaders[task_name], max_steps)
+
+            print(f"\n  Evaluating after task {task_name}...")
+            for eval_idx, eval_name in enumerate(self.config.task_order):
+                acc = evaluate_accuracy(
+                    self.model, eval_loaders[eval_name],
+                    self.tokenizer, device=self.device,
+                )
+                self.cl_metrics.record(task_idx, eval_idx, acc)
+                print(f"    {eval_name}: {acc:.4f}")
+
+        self.efficiency.stop_timer()
+        self.efficiency.update_memory()
+
+    def _train_single_task(self, task_idx, task_name, train_loader, max_steps):
+        is_first_task = (task_idx == 0)
+
+        if is_first_task:
+            self.model.unfreeze_all_lora()
+            params = self.model.get_all_lora_params()
+        else:
+            self.model.freeze_slow()
+            params = self.model.get_fast_params()
+
+        optimizer = AdamW(
+            params, lr=self.config.learning_rate,
+            weight_decay=self.config.weight_decay,
+        )
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer, num_warmup_steps=min(self.config.warmup_steps, max_steps // 10),
+            num_training_steps=max_steps,
+        )
+        scaler = GradScaler(enabled=self.config.fp16)
+
+        self.model.train()
+        step = 0
+        pbar = tqdm(total=max_steps, desc=f"[SuRe] {task_name}")
+
+        while step < max_steps:
+            for batch in train_loader:
+                if step >= max_steps:
+                    break
+
+                batch_device = {k: v.to(self.device) for k, v in batch.items()}
+
+                # --- Compute NLL (Surprise) ---
+                with torch.no_grad():
+                    outputs_for_nll = self.model(
+                        input_ids=batch_device["input_ids"],
+                        attention_mask=batch_device["attention_mask"],
+                    )
+                    loss_fct = nn.CrossEntropyLoss(reduction='none')
+                    per_sample_nll = loss_fct(outputs_for_nll.logits, batch_device["labels"]).cpu().tolist()
+                self.efficiency.record_forward()
+
+                # Add to Surprise Replay Buffer
+                self.replay_buffer.add_batch(batch, per_sample_nll)
+
+                if is_first_task:
+                    combined_batch = batch_device
+                else:
+                    combined_batch, _ = create_mixed_batch(
+                        batch, self.replay_buffer,
+                        replay_ratio=self.config.replay_ratio,
+                        device=self.device,
+                    )
+
+                optimizer.zero_grad()
+                with autocast(device_type="cuda", enabled=self.config.fp16):
+                    outputs = self.model(
+                        input_ids=combined_batch["input_ids"],
+                        attention_mask=combined_batch["attention_mask"],
+                        labels=combined_batch["labels"],
+                    )
+                    loss = outputs.loss
+
+                self.efficiency.record_forward()
+                scaler.scale(loss).backward()
+                scaler.unscale_(optimizer)
+                nn.utils.clip_grad_norm_(params, self.config.max_grad_norm)
+                scaler.step(optimizer)
+                scaler.update()
+                scheduler.step()
+
+                if not is_first_task:
+                    self.model.ema_update_slow(self.config.ema_decay)
+
+                step += 1
+                if step % self.config.log_every == 0:
+                    self.train_log.append({
+                        "task": task_name, "step": step, "loss": loss.item(),
+                    })
+                    pbar.set_postfix(loss=f"{loss.item():.4f}")
+                pbar.update(1)
+
+        pbar.close()
+
+    def get_results(self) -> Dict:
+        return {
+            "method": "SuRe-Style (EMA + Surprise Replay)",
             "cl_metrics": self.cl_metrics.summary(),
             "efficiency": self.efficiency.summary(),
             "train_log": self.train_log,

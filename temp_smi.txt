@@ -1,0 +1,36 @@
+Sat Feb 21 20:00:22 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 560.94                 Driver Version: 560.94         CUDA Version: 12.6     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                  Driver-Model | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 4050 ...  WDDM  |   00000000:01:00.0  On |                  N/A |
+| N/A   75C    P0             74W /   95W |    4958MiB /   6141MiB |    100%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                              GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|    0   N/A  N/A      2236    C+G   ...\OpenVPN Connect\OpenVPNConnect.exe      N/A      |
+|    0   N/A  N/A      5124    C+G   E:\Antigravity\Antigravity.exe              N/A      |
+|    0   N/A  N/A      9092      C   E:\Python311\python.exe                     N/A      |
+|    0   N/A  N/A     10168    C+G   ...cw5n1h2txyewy\CrossDeviceResume.exe      N/A      |
+|    0   N/A  N/A     10884    C+G   C:\Windows\explorer.exe                     N/A      |
+|    0   N/A  N/A     11052    C+G   C:\Windows\System32\ShellHost.exe           N/A      |
+|    0   N/A  N/A     12152    C+G   ...nt.CBS_cw5n1h2txyewy\SearchHost.exe      N/A      |
+|    0   N/A  N/A     12160    C+G   ...2txyewy\StartMenuExperienceHost.exe      N/A      |
+|    0   N/A  N/A     13120    C+G   ...5n1h2txyewy\ShellExperienceHost.exe      N/A      |
+|    0   N/A  N/A     14204    C+G   ...t.LockApp_cw5n1h2txyewy\LockApp.exe      N/A      |
+|    0   N/A  N/A     14524    C+G   ...n\144.0.3719.115\msedgewebview2.exe      N/A      |
+|    0   N/A  N/A     15492    C+G   ...GeForce Experience\NVIDIA Share.exe      N/A      |
+|    0   N/A  N/A     15960    C+G   ...GeForce Experience\NVIDIA Share.exe      N/A      |
+|    0   N/A  N/A     17212    C+G   ...CBS_cw5n1h2txyewy\TextInputHost.exe      N/A      |
+|    0   N/A  N/A     18092    C+G   ...3d8bbwe\dotnet\PAD.Console.Host.exe      N/A      |
+|    0   N/A  N/A     20392    C+G   E:\Antigravity\Antigravity.exe              N/A      |
+|    0   N/A  N/A     21396    C+G   ...3.0_x64__cv1g1gvanyjgm\WhatsApp.exe      N/A      |
++-----------------------------------------------------------------------------------------+

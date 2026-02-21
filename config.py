@@ -27,11 +27,11 @@ class DLOGConfig:
 
     # --- Training ---
     learning_rate: float = 2e-4
-    batch_size: int = 10                # Increased for speed
+    batch_size: int = 15                # Increased for speed
     replay_batch_size: int = 4         # Reduced for 6GB VRAM
     max_input_length: int = 256
     max_target_length: int = 64
-    num_train_steps_per_task: int = 1000
+    num_train_steps_per_task: int = 670
     eval_every: int = 200
     log_every: int = 50
     warmup_steps: int = 100
@@ -50,7 +50,9 @@ class DLOGConfig:
     task_order: List[str] = field(
         default_factory=lambda: [
             "sst2",
-            "ag_news"
+            "ag_news",
+            "amazon_reviews",
+            "dbpedia_14"
         ]
     )
 

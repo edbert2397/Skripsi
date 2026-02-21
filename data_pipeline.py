@@ -139,11 +139,62 @@ class ReservoirReplayBuffer:
 
 
 # ======================================================================
+# 2.5 Surprise-prioritised Replay Buffer (SuRe)
+# ======================================================================
+class SurpriseReplayBuffer:
+    """
+    Surprise-prioritised replay buffer based on Negative Log-Likelihood (NLL).
+    Stores samples with their NLL scores and keeps those with the highest scores.
+    """
+
+    def __init__(self, buffer_size: int = 500):
+        self.buffer_size = buffer_size
+        self.buffer: List[Dict] = []
+
+    def add_batch(self, batch: Dict[str, torch.Tensor], scores: List[float]):
+        """Add all samples with their computed surprise scores."""
+        bsz = batch["input_ids"].shape[0]
+        for i in range(bsz):
+            sample = {k: v[i].cpu().clone() for k, v in batch.items()}
+            sample['score'] = scores[i]
+
+            if len(self.buffer) < self.buffer_size:
+                self.buffer.append(sample)
+                if len(self.buffer) == self.buffer_size:
+                    self.buffer.sort(key=lambda x: x['score'], reverse=True)
+            else:
+                # Minimum score is at the end because we sort descending
+                if sample['score'] > self.buffer[-1]['score']:
+                    self.buffer[-1] = sample
+                    self.buffer.sort(key=lambda x: x['score'], reverse=True)
+
+    def sample(self, n: int) -> Optional[Dict[str, torch.Tensor]]:
+        """Sample n items from the buffer."""
+        if len(self.buffer) == 0:
+            return None
+        n = min(n, len(self.buffer))
+        indices = random.sample(range(len(self.buffer)), n)
+        samples = [self.buffer[i] for i in indices]
+
+        return self._collate(samples)
+
+    def _collate(self, samples: List[Dict]) -> Dict[str, torch.Tensor]:
+        batch = {}
+        for key in samples[0]:
+            if key != 'score':
+                batch[key] = torch.stack([s[key] for s in samples])
+        return batch
+
+    def __len__(self):
+        return len(self.buffer)
+
+
+# ======================================================================
 # 3. Mixed DataLoader (Task + Replay)
 # ======================================================================
 def create_mixed_batch(
     task_batch: Dict[str, torch.Tensor],
-    replay_buffer: ReservoirReplayBuffer,
+    replay_buffer,
     replay_ratio: float = 0.2,
     device: str = "cuda",
 ) -> Tuple[Dict[str, torch.Tensor], Optional[Dict[str, torch.Tensor]]]:

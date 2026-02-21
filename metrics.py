@@ -237,11 +237,16 @@ class EfficiencyTracker:
 @torch.no_grad()
 def evaluate_accuracy(model, eval_loader, tokenizer, device="cuda", max_gen=16) -> float:
     """
-    Evaluate sequence classification accuracy by taking the argmax of the logits.
+    Evaluate sequence classification accuracy by taking the argmax of the logits (Task-IL).
     """
     model.eval()
     correct = 0
     total = 0
+
+    dataset = eval_loader.dataset
+    label_offset = dataset.label_offset
+    num_classes = dataset.cfg.get("num_classes", 2)
+    allowed_labels = list(range(label_offset, label_offset + num_classes))
 
     for batch in eval_loader:
         input_ids = batch["input_ids"].to(device)
@@ -253,6 +258,12 @@ def evaluate_accuracy(model, eval_loader, tokenizer, device="cuda", max_gen=16) 
             attention_mask=attention_mask,
         )
         logits = outputs.logits
+        
+        # Task-IL masking: ignore classes outside of this task's domain
+        mask = torch.ones_like(logits, dtype=torch.bool)
+        mask[:, allowed_labels] = False
+        logits = logits.masked_fill(mask, float('-inf'))
+        
         preds = logits.argmax(dim=-1)
         
         correct += (preds == labels).sum().item()
