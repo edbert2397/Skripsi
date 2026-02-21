@@ -54,9 +54,12 @@ class DLOGModel(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
+        from config import DATASET_CONFIGS
+        total_labels = sum(DATASET_CONFIGS[t].get("num_classes", 2) for t in config.task_order)
+
         self.base_model = AutoModelForSequenceClassification.from_pretrained(
             config.model_name,
-            num_labels=4,
+            num_labels=total_labels,
             torch_dtype="auto", # Use bfloat16/float16 to save 50% VRAM
         )
         if self.base_model.config.pad_token_id is None:
@@ -174,9 +177,12 @@ class BaselineModel(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config
+        from config import DATASET_CONFIGS
+        total_labels = sum(DATASET_CONFIGS[t].get("num_classes", 2) for t in config.task_order)
+
         self.base_model = AutoModelForSequenceClassification.from_pretrained(
             config.model_name,
-            num_labels=4,
+            num_labels=total_labels,
             torch_dtype="auto",
         )
         if self.base_model.config.pad_token_id is None:

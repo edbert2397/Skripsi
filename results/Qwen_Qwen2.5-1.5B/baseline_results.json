@@ -1,227 +1,26 @@
 {
   "method": "Baseline (Single LoRA + Replay)",
   "cl_metrics": {
-    "Final Performance (FP)": 0.917,
-    "Average Performance (AP)": 0.923,
-    "Forgetting (FT)": 0.01200000000000001,
+    "Final Performance (FP)": 0.025,
+    "Average Performance (AP)": 0.025,
+    "Forgetting (FT)": 0.0,
     "Performance Matrix": [
       [
-        0.956,
-        0.242
+        0.0,
+        0.0
       ],
       [
-        0.944,
-        0.89
+        0.0,
+        0.05
       ]
     ]
   },
   "efficiency": {
-    "total_time_sec": 2617.11,
-    "forward_passes": 2000,
+    "total_time_sec": 29.49,
+    "forward_passes": 20,
     "projection_time_sec": 0.0,
     "projection_overhead_pct": 0.0,
-    "peak_memory_mb": 3679.0
+    "peak_memory_mb": 3645.5
   },
-  "train_log": [
-    {
-      "task": "sst2",
-      "step": 50,
-      "loss": 0.671875
-    },
-    {
-      "task": "sst2",
-      "step": 100,
-      "loss": 0.064453125
-    },
-    {
-      "task": "sst2",
-      "step": 150,
-      "loss": 0.8125
-    },
-    {
-      "task": "sst2",
-      "step": 200,
-      "loss": 0.037353515625
-    },
-    {
-      "task": "sst2",
-      "step": 250,
-      "loss": 0.049072265625
-    },
-    {
-      "task": "sst2",
-      "step": 300,
-      "loss": 0.01092529296875
-    },
-    {
-      "task": "sst2",
-      "step": 350,
-      "loss": 0.000965118408203125
-    },
-    {
-      "task": "sst2",
-      "step": 400,
-      "loss": 0.0225830078125
-    },
-    {
-      "task": "sst2",
-      "step": 450,
-      "loss": 0.32421875
-    },
-    {
-      "task": "sst2",
-      "step": 500,
-      "loss": 0.0033416748046875
-    },
-    {
-      "task": "sst2",
-      "step": 550,
-      "loss": 0.0045166015625
-    },
-    {
-      "task": "sst2",
-      "step": 600,
-      "loss": 0.1591796875
-    },
-    {
-      "task": "sst2",
-      "step": 650,
-      "loss": 0.0108642578125
-    },
-    {
-      "task": "sst2",
-      "step": 700,
-      "loss": 0.0028533935546875
-    },
-    {
-      "task": "sst2",
-      "step": 750,
-      "loss": 0.1220703125
-    },
-    {
-      "task": "sst2",
-      "step": 800,
-      "loss": 0.0240478515625
-    },
-    {
-      "task": "sst2",
-      "step": 850,
-      "loss": 0.37890625
-    },
-    {
-      "task": "sst2",
-      "step": 900,
-      "loss": 0.004547119140625
-    },
-    {
-      "task": "sst2",
-      "step": 950,
-      "loss": 0.00165557861328125
-    },
-    {
-      "task": "sst2",
-      "step": 1000,
-      "loss": 0.177734375
-    },
-    {
-      "task": "ag_news",
-      "step": 50,
-      "loss": 1.0859375
-    },
-    {
-      "task": "ag_news",
-      "step": 100,
-      "loss": 0.1708984375
-    },
-    {
-      "task": "ag_news",
-      "step": 150,
-      "loss": 0.2353515625
-    },
-    {
-      "task": "ag_news",
-      "step": 200,
-      "loss": 0.02978515625
-    },
-    {
-      "task": "ag_news",
-      "step": 250,
-      "loss": 0.314453125
-    },
-    {
-      "task": "ag_news",
-      "step": 300,
-      "loss": 0.10107421875
-    },
-    {
-      "task": "ag_news",
-      "step": 350,
-      "loss": 0.1171875
-    },
-    {
-      "task": "ag_news",
-      "step": 400,
-      "loss": 0.85546875
-    },
-    {
-      "task": "ag_news",
-      "step": 450,
-      "loss": 0.330078125
-    },
-    {
-      "task": "ag_news",
-      "step": 500,
-      "loss": 0.45703125
-    },
-    {
-      "task": "ag_news",
-      "step": 550,
-      "loss": 0.365234375
-    },
-    {
-      "task": "ag_news",
-      "step": 600,
-      "loss": 0.005279541015625
-    },
-    {
-      "task": "ag_news",
-      "step": 650,
-      "loss": 0.451171875
-    },
-    {
-      "task": "ag_news",
-      "step": 700,
-      "loss": 0.06103515625
-    },
-    {
-      "task": "ag_news",
-      "step": 750,
-      "loss": 0.09716796875
-    },
-    {
-      "task": "ag_news",
-      "step": 800,
-      "loss": 0.408203125
-    },
-    {
-      "task": "ag_news",
-      "step": 850,
-      "loss": 0.14453125
-    },
-    {
-      "task": "ag_news",
-      "step": 900,
-      "loss": 0.05517578125
-    },
-    {
-      "task": "ag_news",
-      "step": 950,
-      "loss": 0.01953125
-    },
-    {
-      "task": "ag_news",
-      "step": 1000,
-      "loss": 0.032470703125
-    }
-  ]
+  "train_log": []
 }

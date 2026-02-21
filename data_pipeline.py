@@ -34,10 +34,12 @@ class CLTaskDataset(Dataset):
         split: str = "train",
         max_input_length: int = 256,
         max_samples: Optional[int] = None,
+        label_offset: int = 0,
     ):
         self.task_name = task_name
         self.tokenizer = tokenizer
         self.max_input_length = max_input_length
+        self.label_offset = label_offset
 
         cfg = DATASET_CONFIGS[task_name]
         self.cfg = cfg
@@ -62,7 +64,7 @@ class CLTaskDataset(Dataset):
         input_text = self.cfg["prompt_template"].format(
             text=item[self.cfg["input_col"]]
         )
-        label_idx = item[self.cfg["label_col"]]
+        label_idx = item[self.cfg["label_col"]] + self.label_offset
 
         inputs = self.tokenizer(
             input_text,
@@ -186,10 +188,12 @@ class CLEvalDataset(Dataset):
         split: str = "test",
         max_input_length: int = 256,
         max_samples: Optional[int] = 500,
+        label_offset: int = 0,
     ):
         self.task_name = task_name
         self.tokenizer = tokenizer
         self.max_input_length = max_input_length
+        self.label_offset = label_offset
 
         cfg = DATASET_CONFIGS[task_name]
         self.cfg = cfg
@@ -215,7 +219,7 @@ class CLEvalDataset(Dataset):
         input_text = self.cfg["prompt_template"].format(
             text=item[self.cfg["input_col"]]
         )
-        label_idx = item[self.cfg["label_col"]]
+        label_idx = item[self.cfg["label_col"]] + self.label_offset
 
         inputs = self.tokenizer(
             input_text,
@@ -250,16 +254,19 @@ def build_task_dataloaders(
     train_loaders = {}
     eval_loaders = {}
 
+    current_offset = 0
     for task_name in config.task_order:
         train_ds = CLTaskDataset(
             task_name, tokenizer, split="train",
             max_input_length=config.max_input_length,
             max_samples=max_train_samples,
+            label_offset=current_offset,
         )
         eval_ds = CLEvalDataset(
             task_name, tokenizer, split="test",
             max_input_length=config.max_input_length,
             max_samples=max_eval_samples,
+            label_offset=current_offset,
         )
 
         train_loaders[task_name] = DataLoader(
@@ -269,5 +276,7 @@ def build_task_dataloaders(
         eval_loaders[task_name] = DataLoader(
             eval_ds, batch_size=config.batch_size, shuffle=False, num_workers=0,
         )
+
+        current_offset += DATASET_CONFIGS[task_name]["num_classes"]
 
     return train_loaders, eval_loaders
