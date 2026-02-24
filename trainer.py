@@ -2,12 +2,16 @@
 DLOG Trainer — orchestrates the continual learning loop.
 
 Training procedure for each task t:
-  1. (Phase 1) If first task: train both Slow+Fast LoRA, fill replay buffer
+  1. (Phase 1) If first task: train Fast LoRA only (Slow is zero-init, silent).
+     Slow stays at zero throughout Task 1 (gradient chain algebraically broken).
   2. (Phase 2) Subsequent tasks:
-       - Freeze Slow LoRA (or use EMA consolidation)
+       - Freeze Slow LoRA completely — NO EMA updates during training.
+         This is critical: P_slow = I - (A_s A_s^T)/(||A_s||^2 + λ) must be
+         FIXED throughout the task so the null-space projection is stable.
        - Train Fast LoRA on mixed batches (task + replay)
        - Apply soft constraint (L_orth) + hard constraint (gradient projection)
-       - EMA update Slow LoRA after each step
+  3. (End of each task) consolidate_after_task(): hard copy Fast → Slow, reset Fast.
+     This is the ONLY time Slow is ever updated (per Section 3.1).
 """
 import os
 import json
@@ -98,8 +102,12 @@ class DLOGTrainer:
                 max_steps=max_steps,
             )
 
-            # Evaluate on all tasks seen so far
-            print(f"\n  Evaluating after task {task_name}...")
+            # Consolidate Fast → Slow and reset Fast so evaluation reflects deployed mode.
+            self.model.consolidate_after_task()
+            print(f"  Consolidated Fast → Slow for task {task_name}. Fast LoRA reset for next task.")
+
+            # Evaluate in deployed mode (base + slow) after consolidation.
+            print(f"\n  Evaluating after task {task_name} (deployed: base+slow)...")
             for eval_idx, eval_name in enumerate(self.config.task_order):
                 acc = evaluate_accuracy(
                     self.model, eval_loaders[eval_name],
@@ -121,15 +129,42 @@ class DLOGTrainer:
     ):
         is_first_task = (task_idx == 0)
 
-        # --- Setup optimizer ---
-        if is_first_task:
-            # Train all LoRA params
-            self.model.unfreeze_all_lora()
-            params = self.model.get_all_lora_params()
+        # --- Setup optimizer (DLOG: train Fast LoRA + classification head every task) ---
+        self.model.freeze_slow()
+        fast_params = self.model.get_fast_params()
+        for p in fast_params:
+            p.requires_grad = True
+
+        head_params = []
+        for name, p in self.model.base_model.named_parameters():
+            if "score" in name:
+                p.requires_grad = True
+                head_params.append(p)
+
+        # Remove duplicates while preserving order.
+        seen = set()
+        params = []
+        for p in fast_params + head_params:
+            pid = id(p)
+            if pid not in seen:
+                seen.add(pid)
+                params.append(p)
+
+        # Debug print once per task to verify classification head is trainable.
+        score_module = getattr(self.model.base_model, "score", None)
+        if score_module is not None and hasattr(score_module, "weight"):
+            print(f"  [DLOG] score.weight.requires_grad={score_module.weight.requires_grad}")
         else:
-            # Freeze Slow, train only Fast
-            self.model.freeze_slow()
-            params = self.model.get_fast_params()
+            score_param = next(
+                ((name, p) for name, p in self.model.base_model.named_parameters() if "score" in name),
+                None,
+            )
+            if score_param is not None:
+                print(f"  [DLOG] {score_param[0]}.requires_grad={score_param[1].requires_grad}")
+            else:
+                print("  [DLOG] score.* params not found.")
+
+        if not is_first_task:
             # Reset projector for new task
             self.projector.reset()
 
@@ -241,9 +276,13 @@ class DLOGTrainer:
                 scaler.update()
                 scheduler.step()
 
-                # --- 7. EMA consolidation (Slow ← Fast) ---
-                if not is_first_task:
-                    self.model.ema_update_slow(self.config.ema_decay)
+                # --- 7. NO EMA UPDATE (Section 3.1 compliance) ---
+                # Slow LoRA is ONLY updated at the end of each task via
+                # consolidate_after_task(). Keeping Slow frozen during training
+                # ensures P_slow = I - (A_s A_s^T)/(||A_s||^2 + λ) is constant,
+                # so every gradient step projects Fast into the SAME null-space.
+                # EMA would make the null-space a moving target, violating the
+                # stable orthogonal guarantee of Section 3.1.
 
                 # --- 8. Logging ---
                 step += 1

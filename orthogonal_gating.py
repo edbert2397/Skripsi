@@ -60,21 +60,27 @@ def project_gradients_parameter(dual_layers: List[DualLoRALinear]):
         # --- Project A_fast gradient ---
         if A_f.grad is not None:
             g = A_f.grad  # [r, d]
+            g_dtype = g.dtype
             # Sherman-Morrison simplified projection
             # P_slow = I - (A_s @ A_s^T) / (||A_s||^2 + λ)
-            norm_sq = torch.norm(A_s) ** 2
-            P_slow = torch.eye(A_s.shape[0], device=A_s.device) - \
-                     (A_s @ A_s.T) / (norm_sq + lambda_reg)
-            A_f.grad = P_slow @ g  # Apply projection in rank space
+            A_s_fp32 = A_s.float()
+            g_fp32 = g.float()
+            norm_sq = torch.norm(A_s_fp32) ** 2
+            P_slow = torch.eye(A_s_fp32.shape[0], device=A_s_fp32.device, dtype=A_s_fp32.dtype) - \
+                     (A_s_fp32 @ A_s_fp32.T) / (norm_sq + lambda_reg)
+            A_f.grad = (P_slow @ g_fp32).to(dtype=g_dtype)  # Apply projection in rank space
 
         # --- Project B_fast gradient ---
         if B_f.grad is not None:
             g = B_f.grad  # [d_out, r]
+            g_dtype = g.dtype
             # Same formula for B matrices (project on right side)
-            norm_sq = torch.norm(B_s) ** 2
-            P_slow = torch.eye(B_s.shape[1], device=B_s.device) - \
-                     (B_s.T @ B_s) / (norm_sq + lambda_reg)
-            B_f.grad = g @ P_slow  # Apply projection in rank space
+            B_s_fp32 = B_s.float()
+            g_fp32 = g.float()
+            norm_sq = torch.norm(B_s_fp32) ** 2
+            P_slow = torch.eye(B_s_fp32.shape[1], device=B_s_fp32.device, dtype=B_s_fp32.dtype) - \
+                     (B_s_fp32.T @ B_s_fp32) / (norm_sq + lambda_reg)
+            B_f.grad = (g_fp32 @ P_slow).to(dtype=g_dtype)  # Apply projection in rank space
 
 
 # ======================================================================

@@ -13,6 +13,18 @@ from typing import List, Dict, Tuple
 from dual_lora import DualLoRALinear, SingleLoRALinear
 
 
+@torch.no_grad()
+def newton_schulz_orthogonalize(M, steps=5):
+    # M is the input matrix
+    # Scale to ensure spectral radius < 1 for convergence
+    X = M / (torch.linalg.norm(M, ord='fro') + 1e-8)
+    for _ in range(steps):
+        # Newton-Schulz iteration for polar decomposition / orthogonalization
+        A = X.T @ X
+        X = 1.5 * X - 0.5 * X @ A
+    return X
+
+
 # ======================================================================
 # Helper: find and replace linear sub-modules by name pattern
 # ======================================================================
@@ -136,12 +148,62 @@ class DLOGModel(nn.Module):
         return params
 
     # ------------------------------------------------------------------
-    # EMA consolidation
+    # Hard consolidation (between tasks) — THE ONLY WAY SLOW IS UPDATED
     # ------------------------------------------------------------------
     @torch.no_grad()
-    def ema_update_slow(self, decay: float = 0.999):
+    def consolidate_after_task(self):
+        """
+        Called at the END of each task (after evaluation).
+
+        Accumulate the knowledge from Fast LoRA into Slow LoRA using Newton-Schulz
+        iteration to prevent computation bottlenecks associated with SVD.
+        """
         for layer in self.get_dual_lora_layers():
-            layer.ema_update_slow(decay)
+            dtype = layer.A_slow.dtype
+            
+            # Concatenate matrices: B_cat = [B_s, B_f], A_cat = [A_s, A_f]
+            # Convert to float32 for stable decomposition
+            B_s = layer.B_slow.data.float()
+            B_f = layer.B_fast.data.float()
+            A_s = layer.A_slow.data.float()
+            A_f = layer.A_fast.data.float()
+
+            B_cat = torch.cat([B_s, B_f], dim=1)
+            A_cat = torch.cat([A_s, A_f], dim=0)
+
+            # Use QR decomposition to extract small core matrices
+            Q_B, R_B = torch.linalg.qr(B_cat)
+            Q_A, R_A = torch.linalg.qr(A_cat.T)
+
+            # Compute the core mapping matrix
+            M = R_B @ R_A.T
+
+            # Apply the Newton-Schulz function
+            Orth_M = newton_schulz_orthogonalize(M, steps=5)
+
+            # Since we need to reduce back to rank r, slice top r principal components
+            r = layer.rank
+
+            # Reconstruct the updated Slow LoRA weights
+            B_s_new = Q_B @ Orth_M[:, :r]
+            A_s_new = Orth_M[:r, :] @ Q_A.T
+
+            # Update Weights In-Place
+            layer.A_slow.data.copy_(A_s_new.to(dtype))
+            layer.B_slow.data.copy_(B_s_new.to(dtype))
+
+            # Reset Fast to a clean slate for the next task
+            layer.reset_fast()
+
+    @torch.no_grad()
+    def ema_update_slow(self, decay_rate: float = 0.99):
+        """
+        Update Slow LoRA using EMA from Fast LoRA.
+        Used ONLY by SuRe baseline, NOT by DLOG (which uses hard consolidation).
+        """
+        for layer in self.get_dual_lora_layers():
+            layer.A_slow.data.mul_(decay_rate).add_(layer.A_fast.data, alpha=1.0 - decay_rate)
+            layer.B_slow.data.mul_(decay_rate).add_(layer.B_fast.data, alpha=1.0 - decay_rate)
 
     # ------------------------------------------------------------------
     # Freeze / unfreeze helpers for CL phases

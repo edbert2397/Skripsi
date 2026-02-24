@@ -72,15 +72,39 @@ class DualLoRALinear(nn.Module):
     # ------------------------------------------------------------------
     def reset_lora_parameters(self):
         """
-        Slow LoRA: Kaiming init (active from start).
-        Fast LoRA: Zero-initialized so output contribution = 0 at t=0,
-                   preserving the model's original behavior (residual gating).
+        Slow LoRA: ZERO init — completely silent until explicit consolidation.
+
+        Why: If A_slow starts as Kaiming, the slow branch trains on Task 1 data
+        alongside Fast (since both are in the optimizer), causing them to converge
+        to almost-identical solutions. When Task 2 starts, A_fast ≈ A_slow, so
+        the orthogonal loss is immediately enormous and destabilises training.
+
+        With zero init, the gradient chain through Slow is broken:
+            d(B_slow @ A_slow @ x)/d(A_slow) = B_slow^T @ upstream = 0  (B_slow=0)
+            d(B_slow @ A_slow @ x)/d(B_slow) = A_slow @ x      = 0  (A_slow=0)
+        So Slow stays at exactly zero throughout Task 1, and weight decay cannot
+        pull it away from zero (it is already at zero). Only Fast learns Task 1.
+        After Task 1 finishes, consolidate_after_task() hard-copies Fast → Slow.
+
+        Fast LoRA: standard LoRA init — B=0 so output is 0 initially, but A=Kaiming
+        so B receives non-zero upstream gradients and training commences immediately.
         """
-        # Slow
-        nn.init.kaiming_uniform_(self.A_slow, a=math.sqrt(5))
+        # Slow — completely silent until consolidation
+        nn.init.zeros_(self.A_slow)
         nn.init.zeros_(self.B_slow)
 
-        # Fast — break symmetry, zero init B_f so contribution is 0 at start, but A_f gets gradients
+        # Fast — standard LoRA init
+        nn.init.kaiming_uniform_(self.A_fast, a=math.sqrt(5))
+        nn.init.zeros_(self.B_fast)
+
+    def reset_fast(self):
+        """
+        Reset Fast LoRA to standard init — call between tasks via consolidate_after_task().
+
+        This ensures Fast starts orthogonally fresh for each new task instead of
+        inheriting the previous task's values, which would cause the orthogonal loss
+        to be huge initially (A_fast ≈ A_slow at the start of every new task).
+        """
         nn.init.kaiming_uniform_(self.A_fast, a=math.sqrt(5))
         nn.init.zeros_(self.B_fast)
 
@@ -114,13 +138,12 @@ class DualLoRALinear(nn.Module):
         return self.A_fast, self.B_fast
 
     # ------------------------------------------------------------------
-    # EMA update: θ_slow ← decay * θ_slow + (1 - decay) * θ_fast
+    # NO EMA — Slow is ONLY updated via consolidate_after_task()
     # ------------------------------------------------------------------
-    @torch.no_grad()
-    def ema_update_slow(self, decay: float = 0.999):
-        """Consolidate Fast → Slow via exponential moving average."""
-        self.A_slow.data.mul_(decay).add_(self.A_fast.data, alpha=1.0 - decay)
-        self.B_slow.data.mul_(decay).add_(self.B_fast.data, alpha=1.0 - decay)
+    # Per Section 3.1: P_slow = I - (A_s A_s^T)/(||A_s||^2 + λ) must be
+    # FIXED during task training. EMA would shift A_slow every step, making
+    # the null-space a moving target and violating the stable orthogonal guarantee.
+    # ------------------------------------------------------------------
 
     # ------------------------------------------------------------------
     # Repr

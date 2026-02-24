@@ -1,303 +1,42 @@
 {
   "method": "SuRe-Style (EMA + Surprise Replay)",
   "cl_metrics": {
-    "Final Performance (FP)": 0.732,
-    "Average Performance (AP)": 0.9455,
-    "Forgetting (FT)": 0.2846666666666666,
+    "Final Performance (FP)": 0.36250000000000004,
+    "Average Performance (AP)": 0.36250000000000004,
+    "Forgetting (FT)": 0.016666666666666663,
     "Performance Matrix": [
       [
-        0.956,
-        0.286,
-        0.492,
-        0.086
+        0.65,
+        0.3,
+        0.45,
+        0.25
       ],
       [
-        0.842,
-        0.882,
-        0.492,
-        0.07
+        0.65,
+        0.25,
+        0.45,
+        0.25
       ],
       [
-        0.688,
-        0.75,
-        0.966,
-        0.04
+        0.65,
+        0.25,
+        0.45,
+        0.25
       ],
       [
-        0.664,
-        0.768,
-        0.518,
-        0.978
+        0.65,
+        0.25,
+        0.45,
+        0.1
       ]
     ]
   },
   "efficiency": {
-    "total_time_sec": 7662.21,
-    "forward_passes": 5360,
+    "total_time_sec": 122.23,
+    "forward_passes": 80,
     "projection_time_sec": 0.0,
     "projection_overhead_pct": 0.0,
-    "peak_memory_mb": 4010.8
+    "peak_memory_mb": 3976.9
   },
-  "train_log": [
-    {
-      "task": "sst2",
-      "step": 50,
-      "loss": 0.37109375
-    },
-    {
-      "task": "sst2",
-      "step": 100,
-      "loss": 0.373046875
-    },
-    {
-      "task": "sst2",
-      "step": 150,
-      "loss": 0.28125
-    },
-    {
-      "task": "sst2",
-      "step": 200,
-      "loss": 0.02197265625
-    },
-    {
-      "task": "sst2",
-      "step": 250,
-      "loss": 0.007110595703125
-    },
-    {
-      "task": "sst2",
-      "step": 300,
-      "loss": 0.017333984375
-    },
-    {
-      "task": "sst2",
-      "step": 350,
-      "loss": 0.09521484375
-    },
-    {
-      "task": "sst2",
-      "step": 400,
-      "loss": 0.326171875
-    },
-    {
-      "task": "sst2",
-      "step": 450,
-      "loss": 0.0037078857421875
-    },
-    {
-      "task": "sst2",
-      "step": 500,
-      "loss": 0.003997802734375
-    },
-    {
-      "task": "sst2",
-      "step": 550,
-      "loss": 0.047119140625
-    },
-    {
-      "task": "sst2",
-      "step": 600,
-      "loss": 0.3046875
-    },
-    {
-      "task": "sst2",
-      "step": 650,
-      "loss": 0.296875
-    },
-    {
-      "task": "ag_news",
-      "step": 50,
-      "loss": 3.46875
-    },
-    {
-      "task": "ag_news",
-      "step": 100,
-      "loss": 1.1796875
-    },
-    {
-      "task": "ag_news",
-      "step": 150,
-      "loss": 1.09375
-    },
-    {
-      "task": "ag_news",
-      "step": 200,
-      "loss": 0.2255859375
-    },
-    {
-      "task": "ag_news",
-      "step": 250,
-      "loss": 0.6875
-    },
-    {
-      "task": "ag_news",
-      "step": 300,
-      "loss": 0.46484375
-    },
-    {
-      "task": "ag_news",
-      "step": 350,
-      "loss": 0.515625
-    },
-    {
-      "task": "ag_news",
-      "step": 400,
-      "loss": 0.5078125
-    },
-    {
-      "task": "ag_news",
-      "step": 450,
-      "loss": 0.8203125
-    },
-    {
-      "task": "ag_news",
-      "step": 500,
-      "loss": 0.375
-    },
-    {
-      "task": "ag_news",
-      "step": 550,
-      "loss": 0.26953125
-    },
-    {
-      "task": "ag_news",
-      "step": 600,
-      "loss": 0.07470703125
-    },
-    {
-      "task": "ag_news",
-      "step": 650,
-      "loss": 0.357421875
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 50,
-      "loss": 0.014892578125
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 100,
-      "loss": 0.02685546875
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 150,
-      "loss": 0.291015625
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 200,
-      "loss": 0.201171875
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 250,
-      "loss": 0.002838134765625
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 300,
-      "loss": 0.265625
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 350,
-      "loss": 0.076171875
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 400,
-      "loss": 0.15234375
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 450,
-      "loss": 0.1826171875
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 500,
-      "loss": 0.09716796875
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 550,
-      "loss": 0.01092529296875
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 600,
-      "loss": 0.04833984375
-    },
-    {
-      "task": "amazon_reviews",
-      "step": 650,
-      "loss": 0.65234375
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 50,
-      "loss": 2.15625
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 100,
-      "loss": 1.0234375
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 150,
-      "loss": 0.7265625
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 200,
-      "loss": 0.1376953125
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 250,
-      "loss": 0.036376953125
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 300,
-      "loss": 0.033935546875
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 350,
-      "loss": 0.142578125
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 400,
-      "loss": 0.1669921875
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 450,
-      "loss": 0.029052734375
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 500,
-      "loss": 0.00189208984375
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 550,
-      "loss": 0.11669921875
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 600,
-      "loss": 0.369140625
-    },
-    {
-      "task": "dbpedia_14",
-      "step": 650,
-      "loss": 0.00592041015625
-    }
-  ]
+  "train_log": []
 }

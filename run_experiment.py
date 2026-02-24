@@ -285,23 +285,24 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
     # =============================================
     # Experiment 3: SuRe-Style (SuRe)
     # =============================================
-    print("\n" + "="*60)
-    print("  EXPERIMENT 3: SuRe-Style (SOTA/Upper Bound)")
-    print("="*60)
+    sure_results = None
+    # print("\n" + "="*60)
+    # print("  EXPERIMENT 3: SuRe-Style (SOTA/Upper Bound)")
+    # print("="*60)
 
-    set_seed(config.seed)
+    # set_seed(config.seed)
 
-    print("Starting Experiment 3 loading...")
-    sure_model = DLOGModel(config) # SuRe uses Dual-LoRA+EMA
-    sure_trainer = SuReTrainer(config, sure_model, tokenizer)
-    sure_trainer.train_all_tasks(train_loaders, eval_loaders, max_steps_override=max_steps)
-    sure_results = sure_trainer.get_results()
+    # print("Starting Experiment 3 loading...")
+    # sure_model = DLOGModel(config) # SuRe uses Dual-LoRA+EMA
+    # sure_trainer = SuReTrainer(config, sure_model, tokenizer)
+    # sure_trainer.train_all_tasks(train_loaders, eval_loaders, max_steps_override=max_steps)
+    # sure_results = sure_trainer.get_results()
 
-    del sure_model, sure_trainer
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()
+    # del sure_model, sure_trainer
+    # gc.collect()
+    # if torch.cuda.is_available():
+    #     torch.cuda.empty_cache()
+    #     torch.cuda.synchronize()
 
 
     # =============================================
@@ -311,7 +312,7 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
     print("  RESULTS SUMMARY")
     print("#"*60)
 
-    for name, res in [("DLOG", dlog_results), ("Baseline", baseline_results), ("SuRe", sure_results)]:
+    for name, res in [("DLOG", dlog_results), ("Baseline", baseline_results)]:
         print(f"\n  {name}:")
         print(f"    Final Performance (FP): {res['cl_metrics']['Final Performance (FP)']:.4f}")
         print(f"    Average Performance (AP): {res['cl_metrics']['Average Performance (AP)']:.4f}")
@@ -331,8 +332,8 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
 
     with open(os.path.join(output_dir, "dlog_results.json"), "w") as f:
         json.dump(dlog_results, f, indent=2, default=str)
-    with open(os.path.join(output_dir, "sure_results.json"), "w") as f:
-        json.dump(sure_results, f, indent=2, default=str)
+    # with open(os.path.join(output_dir, "sure_results.json"), "w") as f:
+    #     json.dump(sure_results, f, indent=2, default=str)
 
     # Generate plots
     plot_results(dlog_results, baseline_results, sure_results, output_dir)
@@ -343,28 +344,23 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
         f.write(f"Date: {datetime.now().isoformat()}\n")
         f.write(f"Model: {config.model_name}\n")
         f.write(f"Tasks: {config.task_order}\n\n")
-        f.write(f"{'Metric':<30} {'DLOG':>12} {'Baseline':>12} {'SuRe':>12}\n")
-        f.write("-" * 70 + "\n")
+        f.write(f"{'Metric':<30} {'DLOG':>12} {'Baseline':>12}\n")
+        f.write("-" * 56 + "\n")
         f.write(f"{'Final Performance (FP)':<30} "
                 f"{dlog_results['cl_metrics']['Final Performance (FP)']:>12.4f} "
-                f"{baseline_results['cl_metrics']['Final Performance (FP)']:>12.4f} "
-                f"{sure_results['cl_metrics']['Final Performance (FP)']:>12.4f}\n")
+                f"{baseline_results['cl_metrics']['Final Performance (FP)']:>12.4f}\n")
         f.write(f"{'Average Performance (AP)':<30} "
                 f"{dlog_results['cl_metrics']['Average Performance (AP)']:>12.4f} "
-                f"{baseline_results['cl_metrics']['Average Performance (AP)']:>12.4f} "
-                f"{sure_results['cl_metrics']['Average Performance (AP)']:>12.4f}\n")
+                f"{baseline_results['cl_metrics']['Average Performance (AP)']:>12.4f}\n")
         f.write(f"{'Forgetting (FT)':<30} "
                 f"{dlog_results['cl_metrics']['Forgetting (FT)']:>12.4f} "
-                f"{baseline_results['cl_metrics']['Forgetting (FT)']:>12.4f} "
-                f"{sure_results['cl_metrics']['Forgetting (FT)']:>12.4f}\n")
+                f"{baseline_results['cl_metrics']['Forgetting (FT)']:>12.4f}\n")
         f.write(f"{'Wall-clock (s)':<30} "
                 f"{dlog_results['efficiency']['total_time_sec']:>12} "
-                f"{baseline_results['efficiency']['total_time_sec']:>12} "
-                f"{sure_results['efficiency']['total_time_sec']:>12}\n")
+                f"{baseline_results['efficiency']['total_time_sec']:>12}\n")
         f.write(f"{'Forward Passes':<30} "
                 f"{dlog_results['efficiency']['forward_passes']:>12} "
-                f"{baseline_results['efficiency']['forward_passes']:>12} "
-                f"{sure_results['efficiency']['forward_passes']:>12}\n")
+                f"{baseline_results['efficiency']['forward_passes']:>12}\n")
 
     print(f"\n  Results saved to {output_dir}/")
     return dlog_results, baseline_results
@@ -465,7 +461,7 @@ def main():
                         help="LoRA rank (default: 8)")
     parser.add_argument("--steps", type=int, default=None,
                         help="Override training steps per task")
-    parser.add_argument("--projection", type=str, default="memory_gradient",
+    parser.add_argument("--projection", type=str, default="parameter",
                         choices=["parameter", "memory_gradient"],
                         help="Projection type for hard constraint")
     parser.add_argument("--lambda-orth", type=float, default=0.1,

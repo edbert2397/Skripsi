@@ -14,16 +14,20 @@ class DLOGConfig:
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     fp16: bool = False  # Disabled: GradScaler conflicts with multi-backward training loop
     lora_rank: int = 8
-    lora_alpha: float = 16.0
+    lora_alpha: float = 8
     target_modules: Optional[List[str]] = None
 
     # --- Orthogonal Gating ---
-    lambda_orth: float = 0.01           # Soft constraint weight (reduced from 0.1)
+    lambda_orth: float = 0.001          # Reduced from 0.01: after consolidate_after_task() the
+                                        # initial orth loss is much smaller (B_fast=0 → second
+                                        # term=0; random A_fast uncorrelated with A_slow → first
+                                        # term is small).  0.001 keeps it from dominating CE loss.
     use_soft_constraint: bool = True
     use_hard_constraint: bool = True
-    projection_type: str = "memory_gradient"  # "parameter" or "memory_gradient"
+    projection_type: str = "parameter"  # "parameter" or "memory_gradient"
     memory_grad_buffer_size: int = 10  # K steps for incremental QR basis
-    project_every_k: int = 5           # Project every K optimizer steps
+    project_every_k: int = 5           # Project every K optimizer steps (k=1 is most correct
+                                        # but doubles GPU memory; keep 5 for 6GB VRAM budget)
 
     # --- Training ---
     learning_rate: float = 2e-4
@@ -38,8 +42,11 @@ class DLOGConfig:
     weight_decay: float = 0.01
     max_grad_norm: float = 1.0
 
-    # --- EMA (Slow LoRA consolidation) ---
-    ema_decay: float = 0.999
+    # --- Consolidation ---
+    ema_decay: float = 0.99
+    # Slow LoRA is ONLY updated at the END of each task via consolidate_after_task().
+    # No EMA during training — this keeps P_slow = I - (A_s A_s^T)/(||A_s||^2 + λ)
+    # constant throughout the task, ensuring a stable, fixed null-space projection.
 
     # --- Replay ---
     replay_buffer_size: int = 500       # per task
@@ -51,8 +58,8 @@ class DLOGConfig:
         default_factory=lambda: [
             "sst2",
             "ag_news",
-            "amazon_reviews",
-            "dbpedia_14"
+            # "amazon_reviews",
+            # "dbpedia_14"
         ]
     )
 
