@@ -13,31 +13,50 @@
     ]
   },
   "cl_metrics": {
-    "Final Performance (FP)": 0.851,
-    "Average Performance (AP)": 0.744,
-    "Forgetting (FT)": 0.0,
+    "Final Performance (FP)": 0.925,
+    "Average Performance (AP)": 0.927,
+    "Forgetting (FT)": 0.0040000000000000036,
+    "Backward Transfer (BWT)": -0.0040000000000000036,
+    "Learning Accuracy (LA)": 0.927,
     "Performance Matrix": [
       [
-        0.708,
-        0.268
+        0.954,
+        0.276
       ],
       [
-        0.922,
-        0.78
+        0.95,
+        0.9
+      ]
+    ]
+  },
+  "cl_metrics_premerge": {
+    "Final Performance (FP)": 0.925,
+    "Average Performance (AP)": 0.9279999999999999,
+    "Forgetting (FT)": 0.006000000000000005,
+    "Backward Transfer (BWT)": -0.006000000000000005,
+    "Learning Accuracy (LA)": 0.9279999999999999,
+    "Performance Matrix": [
+      [
+        0.954,
+        0.276
+      ],
+      [
+        0.948,
+        0.902
       ]
     ]
   },
   "efficiency": {
-    "total_time_sec": 2838.95,
+    "total_time_sec": 2932.74,
     "forward_passes": 1340,
-    "projection_time_sec": 45.8046,
-    "projection_overhead_pct": 1.61,
+    "projection_time_sec": 45.4364,
+    "projection_overhead_pct": 1.55,
     "peak_memory_mb": 3962.0
   },
   "gradient_conflict": [],
   "subspace_overlap": {
-    "mean_A_separation": 0.940213315721069,
-    "mean_B_separation": 0.8977856470404991
+    "mean_A_separation": 0.9403553443428662,
+    "mean_B_separation": 0.9006747761741281
   },
   "train_log": [
     {
@@ -121,80 +140,80 @@
     {
       "task": "ag_news",
       "step": 50,
-      "task_loss": 0.97265625,
-      "orth_loss": 0.00871331337839365
+      "task_loss": 1.0078125,
+      "orth_loss": 0.03895917534828186
     },
     {
       "task": "ag_news",
       "step": 100,
-      "task_loss": 0.1865234375,
-      "orth_loss": 0.005604840815067291
+      "task_loss": 0.380859375,
+      "orth_loss": 0.015395760536193848
     },
     {
       "task": "ag_news",
       "step": 150,
-      "task_loss": 0.1357421875,
-      "orth_loss": 0.007670804858207703
+      "task_loss": 0.2138671875,
+      "orth_loss": 0.010634779930114746
     },
     {
       "task": "ag_news",
       "step": 200,
-      "task_loss": 0.375,
-      "orth_loss": 0.0069855451583862305
+      "task_loss": 0.1689453125,
+      "orth_loss": 0.009567752480506897
     },
     {
       "task": "ag_news",
       "step": 250,
-      "task_loss": 0.22265625,
-      "orth_loss": 0.00633104145526886
+      "task_loss": 0.462890625,
+      "orth_loss": 0.008079975843429565
     },
     {
       "task": "ag_news",
       "step": 300,
-      "task_loss": 0.1943359375,
-      "orth_loss": 0.0068328529596328735
+      "task_loss": 0.39453125,
+      "orth_loss": 0.00739017128944397
     },
     {
       "task": "ag_news",
       "step": 350,
       "task_loss": 0.37109375,
-      "orth_loss": 0.006465151906013489
+      "orth_loss": 0.0070331767201423645
     },
     {
       "task": "ag_news",
       "step": 400,
-      "task_loss": 0.041748046875,
-      "orth_loss": 0.006489679217338562
+      "task_loss": 0.26953125,
+      "orth_loss": 0.0066788047552108765
     },
     {
       "task": "ag_news",
       "step": 450,
-      "task_loss": 0.04443359375,
-      "orth_loss": 0.0065160393714904785
+      "task_loss": 0.0157470703125,
+      "orth_loss": 0.005977269262075424
     },
     {
       "task": "ag_news",
       "step": 500,
-      "task_loss": 0.2314453125,
-      "orth_loss": 0.006267726421356201
+      "task_loss": 0.427734375,
+      "orth_loss": 0.006026022136211395
     },
     {
       "task": "ag_news",
       "step": 550,
-      "task_loss": 0.271484375,
-      "orth_loss": 0.006280034780502319
+      "task_loss": 0.1669921875,
+      "orth_loss": 0.00591617077589035
     },
     {
       "task": "ag_news",
       "step": 600,
-      "task_loss": 0.11328125,
-      "orth_loss": 0.00624200701713562
+      "task_loss": 0.60546875,
+      "orth_loss": 0.005650686100125313
     },
     {
       "task": "ag_news",
       "step": 650,
-      "task_loss": 0.18359375,
-      "orth_loss": 0.006238430738449097
+      "task_loss": 0.05517578125,
+      "orth_loss": 0.005645805969834328
     }
   ]
 }

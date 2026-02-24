@@ -72,6 +72,7 @@ class DLOGTrainer:
 
         # Metrics
         self.cl_metrics = CLMetricsTracker(config.task_order)
+        self.cl_metrics_premerge = CLMetricsTracker(config.task_order)
         self.grad_tracker = GradientConflictTracker()
         self.efficiency = EfficiencyTracker()
 
@@ -102,7 +103,17 @@ class DLOGTrainer:
                 max_steps=max_steps,
             )
 
-            # Consolidate Fast → Slow and reset Fast so evaluation reflects deployed mode.
+            # Evaluate before consolidation (training-time mode: base + slow + fast).
+            print(f"\n  Evaluating after task {task_name} (pre-merge: base+slow+fast)...")
+            for eval_idx, eval_name in enumerate(self.config.task_order):
+                acc = evaluate_accuracy(
+                    self.model, eval_loaders[eval_name],
+                    self.tokenizer, device=self.device,
+                )
+                self.cl_metrics_premerge.record(task_idx, eval_idx, acc)
+                print(f"    {eval_name}: {acc:.4f}")
+
+            # Consolidate Fast → Slow and reset Fast so deployed evaluation uses base + slow.
             self.model.consolidate_after_task()
             print(f"  Consolidated Fast → Slow for task {task_name}. Fast LoRA reset for next task.")
 
@@ -329,6 +340,7 @@ class DLOGTrainer:
                 "ema_decay": self.config.ema_decay,
             },
             "cl_metrics": self.cl_metrics.summary(),
+            "cl_metrics_premerge": self.cl_metrics_premerge.summary(),
             "efficiency": self.efficiency.summary(),
             "gradient_conflict": self.grad_tracker.history,
             "subspace_overlap": {

@@ -153,10 +153,10 @@ class DLOGModel(nn.Module):
     @torch.no_grad()
     def consolidate_after_task(self):
         """
-        Called at the END of each task (after evaluation).
+        Called at the end of each task between training phases.
 
-        Accumulate the knowledge from Fast LoRA into Slow LoRA using Newton-Schulz
-        iteration to prevent computation bottlenecks associated with SVD.
+        Merge Slow+Fast into a rank-r Slow adapter using an SVD rank-r approximation
+        on the small core matrix M (size 2r x 2r).
         """
         for layer in self.get_dual_lora_layers():
             dtype = layer.A_slow.dtype
@@ -178,15 +178,16 @@ class DLOGModel(nn.Module):
             # Compute the core mapping matrix
             M = R_B @ R_A.T
 
-            # Apply the Newton-Schulz function
-            Orth_M = newton_schulz_orthogonalize(M, steps=5)
-
-            # Since we need to reduce back to rank r, slice top r principal components
+            # Best rank-r approximation of the small core using SVD.
+            U, S, Vh = torch.linalg.svd(M, full_matrices=False)
             r = layer.rank
+            U_r = U[:, :r]
+            S_r = S[:r]
+            Vh_r = Vh[:r, :]
 
-            # Reconstruct the updated Slow LoRA weights
-            B_s_new = Q_B @ Orth_M[:, :r]
-            A_s_new = Orth_M[:r, :] @ Q_A.T
+            sigma_sqrt = torch.diag(torch.sqrt(S_r))
+            B_s_new = Q_B @ U_r @ sigma_sqrt
+            A_s_new = sigma_sqrt @ Vh_r @ Q_A.T
 
             # Update Weights In-Place
             layer.A_slow.data.copy_(A_s_new.to(dtype))

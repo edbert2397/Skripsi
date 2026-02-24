@@ -60,11 +60,29 @@ class CLMetricsTracker:
             fgt.append(best - final)
         return float(np.mean(fgt))
 
+    def backward_transfer(self) -> float:
+        """
+        BWT = (1/(T-1)) Σ_{j=0..T-2} (R[T-1, j] - R[j, j]).
+        Positive means the final model improved older tasks vs when they were first learned.
+        """
+        if self.n_tasks <= 1:
+            return 0.0
+        vals = []
+        for j in range(self.n_tasks - 1):
+            vals.append(self.R[-1, j] - self.R[j, j])
+        return float(np.mean(vals))
+
+    def learning_accuracy(self) -> float:
+        """LA = (1/T) Σ_i R[i, i]."""
+        return float(np.mean(np.diag(self.R)))
+
     def summary(self) -> Dict:
         return {
             "Final Performance (FP)": self.final_performance(),
             "Average Performance (AP)": self.average_performance(),
             "Forgetting (FT)": self.forgetting(),
+            "Backward Transfer (BWT)": self.backward_transfer(),
+            "Learning Accuracy (LA)": self.learning_accuracy(),
             "Performance Matrix": self.R.tolist(),
         }
 

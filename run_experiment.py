@@ -317,6 +317,8 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
         print(f"    Final Performance (FP): {res['cl_metrics']['Final Performance (FP)']:.4f}")
         print(f"    Average Performance (AP): {res['cl_metrics']['Average Performance (AP)']:.4f}")
         print(f"    Forgetting (FT): {res['cl_metrics']['Forgetting (FT)']:.4f}")
+        print(f"    Backward Transfer (BWT): {res['cl_metrics']['Backward Transfer (BWT)']:.4f}")
+        print(f"    Learning Accuracy (LA): {res['cl_metrics']['Learning Accuracy (LA)']:.4f}")
         if "efficiency" in res:
             print(f"    Wall-clock: {res['efficiency']['total_time_sec']}s")
             print(f"    Forward passes: {res['efficiency']['forward_passes']}")
@@ -355,6 +357,12 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
         f.write(f"{'Forgetting (FT)':<30} "
                 f"{dlog_results['cl_metrics']['Forgetting (FT)']:>12.4f} "
                 f"{baseline_results['cl_metrics']['Forgetting (FT)']:>12.4f}\n")
+        f.write(f"{'Backward Transfer (BWT)':<30} "
+                f"{dlog_results['cl_metrics']['Backward Transfer (BWT)']:>12.4f} "
+                f"{baseline_results['cl_metrics']['Backward Transfer (BWT)']:>12.4f}\n")
+        f.write(f"{'Learning Accuracy (LA)':<30} "
+                f"{dlog_results['cl_metrics']['Learning Accuracy (LA)']:>12.4f} "
+                f"{baseline_results['cl_metrics']['Learning Accuracy (LA)']:>12.4f}\n")
         f.write(f"{'Wall-clock (s)':<30} "
                 f"{dlog_results['efficiency']['total_time_sec']:>12} "
                 f"{baseline_results['efficiency']['total_time_sec']:>12}\n")
