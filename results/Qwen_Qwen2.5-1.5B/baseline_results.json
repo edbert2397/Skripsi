@@ -1,24 +1,159 @@
 {
   "method": "Baseline (Single LoRA + Replay)",
   "cl_metrics": {
-    "Final Performance (FP)": 0.9495,
-    "Average Performance (AP)": 0.945,
-    "Forgetting (FT)": 0.0013,
-    "Backward Transfer (BWT)": 0.006,
-    "Learning Accuracy (LA)": 0.945,
+    "Final Performance (FP)": 0.9199999999999999,
+    "Average Performance (AP)": 0.921,
+    "Forgetting (FT)": 0.0020000000000000018,
+    "Backward Transfer (BWT)": -0.0020000000000000018,
+    "Learning Accuracy (LA)": 0.921,
     "Performance Matrix": [
-      [0.948,  0.9493, 0.9513, 0.0  ],
-      [0.9553, 0.942,  0.9513, 0.0  ],
-      [0.9553, 0.9493, 0.944,  0.0  ],
-      [0.954,  0.948,  0.950,  0.946]
+      [
+        0.95,
+        0.0
+      ],
+      [
+        0.948,
+        0.892
+      ]
     ]
   },
   "efficiency": {
-    "total_time_sec": 5898.56,
-    "forward_passes": 2680,
+    "total_time_sec": 2751.13,
+    "forward_passes": 1340,
     "projection_time_sec": 0.0,
     "projection_overhead_pct": 0.0,
-    "peak_memory_mb": 3645.6
+    "peak_memory_mb": 3965.8
   },
-  "train_log": []
+  "train_log": [
+    {
+      "task": "sst2",
+      "step": 50,
+      "loss": 0.91796875
+    },
+    {
+      "task": "sst2",
+      "step": 100,
+      "loss": 0.0556640625
+    },
+    {
+      "task": "sst2",
+      "step": 150,
+      "loss": 0.10400390625
+    },
+    {
+      "task": "sst2",
+      "step": 200,
+      "loss": 0.007781982421875
+    },
+    {
+      "task": "sst2",
+      "step": 250,
+      "loss": 0.040771484375
+    },
+    {
+      "task": "sst2",
+      "step": 300,
+      "loss": 0.25390625
+    },
+    {
+      "task": "sst2",
+      "step": 350,
+      "loss": 0.002349853515625
+    },
+    {
+      "task": "sst2",
+      "step": 400,
+      "loss": 0.13671875
+    },
+    {
+      "task": "sst2",
+      "step": 450,
+      "loss": 0.33984375
+    },
+    {
+      "task": "sst2",
+      "step": 500,
+      "loss": 0.0284423828125
+    },
+    {
+      "task": "sst2",
+      "step": 550,
+      "loss": 0.37109375
+    },
+    {
+      "task": "sst2",
+      "step": 600,
+      "loss": 0.012939453125
+    },
+    {
+      "task": "sst2",
+      "step": 650,
+      "loss": 0.0159912109375
+    },
+    {
+      "task": "ag_news",
+      "step": 50,
+      "loss": 2.0
+    },
+    {
+      "task": "ag_news",
+      "step": 100,
+      "loss": 0.578125
+    },
+    {
+      "task": "ag_news",
+      "step": 150,
+      "loss": 0.08349609375
+    },
+    {
+      "task": "ag_news",
+      "step": 200,
+      "loss": 0.4375
+    },
+    {
+      "task": "ag_news",
+      "step": 250,
+      "loss": 0.18359375
+    },
+    {
+      "task": "ag_news",
+      "step": 300,
+      "loss": 0.1083984375
+    },
+    {
+      "task": "ag_news",
+      "step": 350,
+      "loss": 0.349609375
+    },
+    {
+      "task": "ag_news",
+      "step": 400,
+      "loss": 0.057373046875
+    },
+    {
+      "task": "ag_news",
+      "step": 450,
+      "loss": 0.10791015625
+    },
+    {
+      "task": "ag_news",
+      "step": 500,
+      "loss": 0.2890625
+    },
+    {
+      "task": "ag_news",
+      "step": 550,
+      "loss": 0.318359375
+    },
+    {
+      "task": "ag_news",
+      "step": 600,
+      "loss": 0.10205078125
+    },
+    {
+      "task": "ag_news",
+      "step": 650,
+      "loss": 0.181640625
+    }
+  ]
 }

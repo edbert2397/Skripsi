@@ -27,13 +27,13 @@ class DLOGConfig:
     use_hard_constraint: bool = True
     projection_type: str = "parameter"  # "parameter" or "memory_gradient"
     memory_grad_buffer_size: int = 10  # K steps for incremental QR basis
-    project_every_k: int = 5           # Project every K optimizer steps (k=1 is most correct
+    project_every_k: int = 1           # Project every K optimizer steps (k=1 is most correct
                                         # but doubles GPU memory; keep 5 for 6GB VRAM budget)
 
     # --- Training ---
     learning_rate: float = 2e-4
     batch_size: int = 15                # Increased for speed
-    replay_batch_size: int = 2         # Reduced for 6GB VRAM
+    replay_batch_size: int = 4         # Reduced for 6GB VRAM
     max_input_length: int = 256
     max_target_length: int = 64
     num_train_steps_per_task: int = 670
