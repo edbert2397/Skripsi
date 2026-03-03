@@ -4,7 +4,7 @@ DLOG Experiment Runner — main entry point.
 Usage:
     python run_experiment.py                  # Full experiment
     python run_experiment.py --smoke-test     # Quick sanity check (5 steps)
-    python run_experiment.py --ablation       # Run all ablation variants
+    python run_experiment.py --ablation       # Run 3 orth ablations (parameter projection)
 """
 import os
 import sys
@@ -334,6 +334,8 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
 
     with open(os.path.join(output_dir, "dlog_results.json"), "w") as f:
         json.dump(dlog_results, f, indent=2, default=str)
+    with open(os.path.join(output_dir, "baseline_results.json"), "w") as f:
+        json.dump(baseline_results, f, indent=2, default=str)
     # with open(os.path.join(output_dir, "sure_results.json"), "w") as f:
     #     json.dump(sure_results, f, indent=2, default=str)
 
@@ -378,13 +380,11 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
 # Ablation runner
 # ======================================================================
 def run_ablation(config: DLOGConfig, smoke_test: bool = False):
-    """Run ablation study: Soft-only, Hard-only, Soft+Hard, Parameter vs Memory-gradient."""
+    """Run ablation study: proposal-aligned orthogonal-gating variants (parameter projection only)."""
     ablation_configs = [
-        ("Soft Only", {"use_soft_constraint": True, "use_hard_constraint": False}),
+        ("Soft Only", {"use_soft_constraint": True, "use_hard_constraint": False, "projection_type": "parameter"}),
         ("Hard Only (Parameter)", {"use_soft_constraint": False, "use_hard_constraint": True, "projection_type": "parameter"}),
-        ("Hard Only (Memory-Grad)", {"use_soft_constraint": False, "use_hard_constraint": True, "projection_type": "memory_gradient"}),
         ("Soft + Hard (Parameter)", {"use_soft_constraint": True, "use_hard_constraint": True, "projection_type": "parameter"}),
-        ("Soft + Hard (Memory-Grad)", {"use_soft_constraint": True, "use_hard_constraint": True, "projection_type": "memory_gradient"}),
     ]
 
     max_steps = config.smoke_test_steps if smoke_test else config.num_train_steps_per_task
@@ -423,7 +423,7 @@ def run_ablation(config: DLOGConfig, smoke_test: bool = False):
         torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
     # Save ablation results
-    output_dir = os.path.join(config.output_dir, "ablation")
+    output_dir = os.path.join(config.output_dir, "ablation_orth_parameter")
     os.makedirs(output_dir, exist_ok=True)
 
     with open(os.path.join(output_dir, "ablation_results.json"), "w") as f:
@@ -433,22 +433,56 @@ def run_ablation(config: DLOGConfig, smoke_test: bool = False):
     print(f"\n{'='*60}")
     print(f"  ABLATION RESULTS")
     print(f"{'='*60}")
-    print(f"{'Variant':<30} {'FP':>8} {'AP':>8} {'FT':>8}")
-    print("-" * 56)
+    print(f"{'Variant':<30} {'FP':>8} {'AP':>8} {'FT':>8} {'BWT':>8} {'LA':>8}")
+    print("-" * 74)
     for name, res in all_results.items():
         fp = res["cl_metrics"]["Final Performance (FP)"]
         ap = res["cl_metrics"]["Average Performance (AP)"]
         ft = res["cl_metrics"]["Forgetting (FT)"]
-        print(f"{name:<30} {fp:>8.4f} {ap:>8.4f} {ft:>8.4f}")
+        bwt = res["cl_metrics"]["Backward Transfer (BWT)"]
+        la = res["cl_metrics"]["Learning Accuracy (LA)"]
+        print(f"{name:<30} {fp:>8.4f} {ap:>8.4f} {ft:>8.4f} {bwt:>8.4f} {la:>8.4f}")
+
+    has_premerge = all("cl_metrics_premerge" in res for res in all_results.values())
+    if has_premerge:
+        print(f"\n{'Variant':<30} {'FP(pre)':>10} {'AP(pre)':>10} {'FT(pre)':>10} {'BWT(pre)':>10} {'LA(pre)':>10}")
+        print("-" * 88)
+        for name, res in all_results.items():
+            pre = res["cl_metrics_premerge"]
+            print(
+                f"{name:<30} "
+                f"{pre['Final Performance (FP)']:>10.4f} "
+                f"{pre['Average Performance (AP)']:>10.4f} "
+                f"{pre['Forgetting (FT)']:>10.4f} "
+                f"{pre['Backward Transfer (BWT)']:>10.4f} "
+                f"{pre['Learning Accuracy (LA)']:>10.4f}"
+            )
 
     with open(os.path.join(output_dir, "ablation_table.txt"), "w") as f:
-        f.write(f"{'Variant':<30} {'FP':>8} {'AP':>8} {'FT':>8}\n")
-        f.write("-" * 56 + "\n")
+        f.write(f"{'Variant':<30} {'FP':>8} {'AP':>8} {'FT':>8} {'BWT':>8} {'LA':>8}\n")
+        f.write("-" * 74 + "\n")
         for name, res in all_results.items():
             fp = res["cl_metrics"]["Final Performance (FP)"]
             ap = res["cl_metrics"]["Average Performance (AP)"]
             ft = res["cl_metrics"]["Forgetting (FT)"]
-            f.write(f"{name:<30} {fp:>8.4f} {ap:>8.4f} {ft:>8.4f}\n")
+            bwt = res["cl_metrics"]["Backward Transfer (BWT)"]
+            la = res["cl_metrics"]["Learning Accuracy (LA)"]
+            f.write(f"{name:<30} {fp:>8.4f} {ap:>8.4f} {ft:>8.4f} {bwt:>8.4f} {la:>8.4f}\n")
+
+        if has_premerge:
+            f.write("\n")
+            f.write(f"{'Variant':<30} {'FP(pre)':>10} {'AP(pre)':>10} {'FT(pre)':>10} {'BWT(pre)':>10} {'LA(pre)':>10}\n")
+            f.write("-" * 88 + "\n")
+            for name, res in all_results.items():
+                pre = res["cl_metrics_premerge"]
+                f.write(
+                    f"{name:<30} "
+                    f"{pre['Final Performance (FP)']:>10.4f} "
+                    f"{pre['Average Performance (AP)']:>10.4f} "
+                    f"{pre['Forgetting (FT)']:>10.4f} "
+                    f"{pre['Backward Transfer (BWT)']:>10.4f} "
+                    f"{pre['Learning Accuracy (LA)']:>10.4f}\n"
+                )
 
     print(f"\n  Ablation results saved to {output_dir}/")
     return all_results
@@ -462,7 +496,7 @@ def main():
     parser.add_argument("--smoke-test", action="store_true",
                         help="Quick sanity check with minimal steps")
     parser.add_argument("--ablation", action="store_true",
-                        help="Run ablation study")
+                        help="Run 3 orth ablations (parameter projection only)")
     parser.add_argument("--model", type=str, default="google/t5gemma-2-1b-1b",
                         help="Model name (default: google/t5gemma-2-1b-1b)")
     parser.add_argument("--rank", type=int, default=8,
@@ -472,8 +506,8 @@ def main():
     parser.add_argument("--projection", type=str, default="parameter",
                         choices=["parameter", "memory_gradient"],
                         help="Projection type for hard constraint")
-    parser.add_argument("--lambda-orth", type=float, default=0.1,
-                        help="Soft constraint weight")
+    parser.add_argument("--lambda-orth", type=float, default=None,
+                        help="Soft constraint weight (default: auto — 0.01 with hard, 0.10 without)")
     parser.add_argument("--output-dir", type=str, default="results",
                         help="Output directory")
     parser.add_argument("--no-soft", action="store_true",
@@ -488,7 +522,7 @@ def main():
     config = DLOGConfig(
         model_name=args.model,
         lora_rank=args.rank,
-        lambda_orth=args.lambda_orth,
+        **(dict(lambda_orth=args.lambda_orth, auto_lambda_orth=False) if args.lambda_orth is not None else {}),
         projection_type=args.projection,
         use_soft_constraint=not args.no_soft,
         use_hard_constraint=not args.no_hard,

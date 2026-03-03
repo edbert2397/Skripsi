@@ -151,14 +151,26 @@ class DLOGModel(nn.Module):
     # Hard consolidation (between tasks) — THE ONLY WAY SLOW IS UPDATED
     # ------------------------------------------------------------------
     @torch.no_grad()
-    def consolidate_after_task(self):
+    def consolidate_after_task(self, skip_keys=None):
         """
         Called at the end of each task between training phases.
 
         Merge Slow+Fast into a rank-r Slow adapter using an SVD rank-r approximation
         on the small core matrix M (size 2r x 2r).
+
+        Parameters
+        ----------
+        skip_keys : set[str] or None
+            Module keys (from self._dual_lora_keys) that should NOT be consolidated.
+            IPC-frozen modules pass their keys here to keep their Slow slots intact
+            so the accumulated memory is not overwritten by the (reset) Fast branch.
         """
-        for layer in self.get_dual_lora_layers():
+        skip_keys = set(skip_keys) if skip_keys is not None else set()
+        for key, layer in zip(self._dual_lora_keys, self.get_dual_lora_layers()):
+            if key in skip_keys:
+                # IPC-frozen: only reset Fast (Slow stays as-is to preserve memory).
+                layer.reset_fast()
+                continue
             dtype = layer.A_slow.dtype
             
             # Concatenate matrices: B_cat = [B_s, B_f], A_cat = [A_s, A_f]

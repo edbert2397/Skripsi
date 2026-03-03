@@ -18,10 +18,11 @@ class DLOGConfig:
     target_modules: Optional[List[str]] = None
 
     # --- Orthogonal Gating ---
-    lambda_orth: float = 0.001          # Reduced from 0.01: after consolidate_after_task() the
-                                        # initial orth loss is much smaller (B_fast=0 → second
-                                        # term=0; random A_fast uncorrelated with A_slow → first
-                                        # term is small).  0.001 keeps it from dominating CE loss.
+    # lambda_orth is derived automatically in __post_init__ when auto_lambda_orth=True:
+    #   0.01 when use_hard_constraint=True  (hard projection already handles most of the work)
+    #   0.10 when use_hard_constraint=False (soft penalty must carry the full load)
+    lambda_orth: float = 0.01           # placeholder; overwritten by __post_init__ if auto_lambda_orth=True
+    auto_lambda_orth: bool = True       # if True, derive lambda_orth from use_hard_constraint
     use_soft_constraint: bool = True
     use_hard_constraint: bool = True
     projection_type: str = "parameter"  # "parameter" or "memory_gradient"
@@ -32,7 +33,7 @@ class DLOGConfig:
     # --- Training ---
     learning_rate: float = 2e-4
     batch_size: int = 15                # Increased for speed
-    replay_batch_size: int = 4         # Reduced for 6GB VRAM
+    replay_batch_size: int = 2         # Reduced for 6GB VRAM
     max_input_length: int = 256
     max_target_length: int = 64
     num_train_steps_per_task: int = 670
@@ -49,7 +50,7 @@ class DLOGConfig:
     # constant throughout the task, ensuring a stable, fixed null-space projection.
 
     # --- Replay ---
-    replay_buffer_size: int = 500       # per task
+    replay_buffer_size: int = 750       # per task
     replay_ratio: float = 0.2          # fraction of replay in each batch
     replay_strategy: str = "reservoir"  # "random" or "reservoir"
 
@@ -71,10 +72,27 @@ class DLOGConfig:
     smoke_test_steps: int = 10
     smoke_test_samples: int = 50
 
+    # --- IPC: Important Module Freezing (arXiv:2504.13407 adaptation) ---
+    # Freezes the most "important" LoRA (layer × target) modules for future tasks
+    # based on gradient-sensitivity × uncertainty scores.
+    ipc_enabled: bool = True
+    ipc_beta1: float = 0.85                    # EMA decay for sensitivity bar_I
+    ipc_beta2: float = 0.85                    # EMA decay for uncertainty bar_U
+    ipc_freeze_p: float = 0.10                 # fraction of modules to freeze per task boundary
+    ipc_max_frozen_fraction: float = 0.30      # global cap: at most 30% of modules ever frozen
+    ipc_update_every_n_steps: int = 1          # how often (in steps) to update stats from normal grads
+    ipc_scoring_microbatch_enabled: bool = True
+    ipc_scoring_microbatch_every_k_steps: int = 20   # replay-only scoring pass every K steps
+    ipc_scoring_microbatch_bsz: int = 8        # size of scoring-only replay microbatch
+
     # --- Seed ---
     seed: int = 42
 
     def __post_init__(self):
+        # Auto-derive lambda_orth from constraint mode
+        if self.auto_lambda_orth:
+            self.lambda_orth = 0.01 if self.use_hard_constraint else 0.1
+
         # Auto-detect target modules if not specified
         if self.target_modules is None:
             name_lower = self.model_name.lower()

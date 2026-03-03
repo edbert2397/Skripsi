@@ -43,6 +43,7 @@ from metrics import (
     evaluate_accuracy,
     compute_all_subspace_overlaps,
 )
+from ipc_freeze import ImportanceTracker, FreezeManager
 
 
 # ======================================================================
@@ -79,6 +80,14 @@ class DLOGTrainer:
         # Logging
         self.train_log: List[Dict] = []
 
+        # IPC: Important Module Freezing (arXiv:2504.13407 adaptation)
+        if config.ipc_enabled:
+            self.ipc_tracker = ImportanceTracker(config, model)
+            self.ipc_manager = FreezeManager(config)
+        else:
+            self.ipc_tracker = None
+            self.ipc_manager = None
+
     def train_all_tasks(
         self,
         train_loaders: Dict,
@@ -103,26 +112,46 @@ class DLOGTrainer:
                 max_steps=max_steps,
             )
 
+            # Class-IL: number of classes seen so far (cumulative, used for eval masking).
+            from config import DATASET_CONFIGS as _DC
+            num_seen_classes = sum(
+                _DC[t]["num_classes"] for t in self.config.task_order[:task_idx + 1]
+            )
+
             # Evaluate before consolidation (training-time mode: base + slow + fast).
-            print(f"\n  Evaluating after task {task_name} (pre-merge: base+slow+fast)...")
+            print(f"\n  Evaluating after task {task_name} (pre-merge: base+slow+fast, seen classes={num_seen_classes})...")
             for eval_idx, eval_name in enumerate(self.config.task_order):
                 acc = evaluate_accuracy(
                     self.model, eval_loaders[eval_name],
                     self.tokenizer, device=self.device,
+                    num_seen_classes=num_seen_classes,
                 )
                 self.cl_metrics_premerge.record(task_idx, eval_idx, acc)
                 print(f"    {eval_name}: {acc:.4f}")
 
             # Consolidate Fast → Slow and reset Fast so deployed evaluation uses base + slow.
-            self.model.consolidate_after_task()
+            # IPC-frozen modules are skipped (their Slow slot is preserved, Fast is only reset).
+            ipc_frozen = self.ipc_manager.get_frozen_keys() if self.ipc_manager else set()
+            self.model.consolidate_after_task(skip_keys=ipc_frozen)
             print(f"  Consolidated Fast → Slow for task {task_name}. Fast LoRA reset for next task.")
 
+            # --- IPC task-boundary: score → select → freeze → reset stats ---
+            if self.config.ipc_enabled and self.ipc_tracker is not None:
+                self.ipc_manager.select_and_freeze(
+                    self.ipc_tracker, self.model, task_idx
+                )
+                # full reset: treat next task independently
+                self.ipc_tracker.reset_stats(decay=False)
+                # Re-apply frozen requires_grad after consolidation reset Fast params.
+                self.ipc_manager.apply_freezing_to_model(self.model)
+
             # Evaluate in deployed mode (base + slow) after consolidation.
-            print(f"\n  Evaluating after task {task_name} (deployed: base+slow)...")
+            print(f"\n  Evaluating after task {task_name} (deployed: base+slow, seen classes={num_seen_classes})...")
             for eval_idx, eval_name in enumerate(self.config.task_order):
                 acc = evaluate_accuracy(
                     self.model, eval_loaders[eval_name],
                     self.tokenizer, device=self.device,
+                    num_seen_classes=num_seen_classes,
                 )
                 self.cl_metrics.record(task_idx, eval_idx, acc)
                 print(f"    {eval_name}: {acc:.4f}")
@@ -142,9 +171,15 @@ class DLOGTrainer:
 
         # --- Setup optimizer (DLOG: train Fast LoRA + classification head every task) ---
         self.model.freeze_slow()
-        fast_params = self.model.get_fast_params()
-        for p in fast_params:
+        # First, ensure all fast params are trainable (then re-freeze IPC frozen ones below).
+        for p in self.model.get_fast_params():
             p.requires_grad = True
+        # IPC: exclude frozen modules from optimizer and set their requires_grad=False.
+        if self.config.ipc_enabled and self.ipc_manager is not None:
+            self.ipc_manager.apply_freezing_to_model(self.model)
+            fast_params = self.ipc_manager.get_trainable_fast_params(self.model)
+        else:
+            fast_params = self.model.get_fast_params()
 
         head_params = []
         for name, p in self.model.base_model.named_parameters():
@@ -267,6 +302,16 @@ class DLOGTrainer:
                 scaler.scale(total_loss).backward()
                 scaler.unscale_(optimizer)
 
+                # --- 4b. IPC: update importance stats from current gradients ---
+                # Must run after unscale_ so grads are in the original scale,
+                # and before zero_grad() which happens at the start of the next iteration.
+                if (
+                    self.config.ipc_enabled
+                    and self.ipc_tracker is not None
+                    and step % self.config.ipc_update_every_n_steps == 0
+                ):
+                    self.ipc_tracker.update_from_grads()
+
                 # --- 5. Hard orthogonal projection ---
                 if (
                     not is_first_task
@@ -286,6 +331,21 @@ class DLOGTrainer:
                 scaler.step(optimizer)
                 scaler.update()
                 scheduler.step()
+
+                # --- 6b. IPC: replay-only scoring microbatch (optional) ---
+                # Runs a separate scoring-only backward on pure replay data
+                # WITHOUT calling optimizer.step(), then clears grads.
+                # This enriches bar_I / bar_U with signal from old tasks, combating
+                # the bias toward the current task in the mixed-batch statistics.
+                if (
+                    self.config.ipc_enabled
+                    and self.ipc_tracker is not None
+                    and self.config.ipc_scoring_microbatch_enabled
+                    and not is_first_task
+                    and step % self.config.ipc_scoring_microbatch_every_k_steps == 0
+                    and len(self.replay_buffer) > 0
+                ):
+                    self._run_ipc_scoring_microbatch(optimizer)
 
                 # --- 7. NO EMA UPDATE (Section 3.1 compliance) ---
                 # Slow LoRA is ONLY updated at the end of each task via
@@ -325,6 +385,41 @@ class DLOGTrainer:
                 pbar.update(1)
 
         pbar.close()
+
+    # ------------------------------------------------------------------
+    # IPC replay-only scoring microbatch
+    # ------------------------------------------------------------------
+
+    def _run_ipc_scoring_microbatch(self, optimizer) -> None:
+        """
+        Score-only forward+backward on a pure replay microbatch.
+
+        - Does NOT call optimizer.step()  →  parameters unchanged.
+        - Calls ipc_tracker.update_from_grads() to enrich stats.
+        - Clears gradients immediately after so the next training step
+          starts from a clean slate.
+        """
+        micro_bsz = self.config.ipc_scoring_microbatch_bsz
+        micro_batch = self.replay_buffer.sample(micro_bsz)
+        if micro_batch is None:
+            return
+
+        micro_batch = {k: v.to(self.device) for k, v in micro_batch.items()}
+
+        # Scoring forward+backward (no mixed precision needed — already unscaled).
+        with torch.autocast(device_type="cuda", enabled=self.config.fp16):
+            outputs = self.model(
+                input_ids=micro_batch["input_ids"],
+                attention_mask=micro_batch["attention_mask"],
+                labels=micro_batch["labels"],
+            )
+        outputs.loss.backward()
+
+        # Update EMA stats from the fresh replay-only gradients.
+        self.ipc_tracker.update_from_grads()
+
+        # Clear gradients — do NOT call optimizer.step().
+        optimizer.zero_grad()
 
     def get_results(self) -> Dict:
         """Gather all results into a single dict."""
@@ -392,11 +487,17 @@ class BaselineTrainer:
                 eval_loaders, max_steps,
             )
 
-            print(f"\n  Evaluating after task {task_name}...")
+            # Class-IL: number of classes seen so far (cumulative, used for eval masking).
+            from config import DATASET_CONFIGS as _DC
+            num_seen_classes = sum(
+                _DC[t]["num_classes"] for t in self.config.task_order[:task_idx + 1]
+            )
+            print(f"\n  Evaluating after task {task_name} (seen classes={num_seen_classes})...")
             for eval_idx, eval_name in enumerate(self.config.task_order):
                 acc = evaluate_accuracy(
                     self.model, eval_loaders[eval_name],
                     self.tokenizer, device=self.device,
+                    num_seen_classes=num_seen_classes,
                 )
                 self.cl_metrics.record(task_idx, eval_idx, acc)
                 print(f"    {eval_name}: {acc:.4f}")
@@ -513,11 +614,17 @@ class SuReTrainer:
 
             self._train_single_task(task_idx, task_name, train_loaders[task_name], max_steps)
 
-            print(f"\n  Evaluating after task {task_name}...")
+            # Class-IL: number of classes seen so far (cumulative, used for eval masking).
+            from config import DATASET_CONFIGS as _DC
+            num_seen_classes = sum(
+                _DC[t]["num_classes"] for t in self.config.task_order[:task_idx + 1]
+            )
+            print(f"\n  Evaluating after task {task_name} (seen classes={num_seen_classes})...")
             for eval_idx, eval_name in enumerate(self.config.task_order):
                 acc = evaluate_accuracy(
                     self.model, eval_loaders[eval_name],
                     self.tokenizer, device=self.device,
+                    num_seen_classes=num_seen_classes,
                 )
                 self.cl_metrics.record(task_idx, eval_idx, acc)
                 print(f"    {eval_name}: {acc:.4f}")

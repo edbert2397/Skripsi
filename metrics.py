@@ -253,18 +253,28 @@ class EfficiencyTracker:
 # 5. Accuracy Evaluation (generation-based)
 # ======================================================================
 @torch.no_grad()
-def evaluate_accuracy(model, eval_loader, tokenizer, device="cuda", max_gen=16) -> float:
+def evaluate_accuracy(
+    model,
+    eval_loader,
+    tokenizer,
+    device: str = "cuda",
+    num_seen_classes: Optional[int] = None,
+) -> float:
     """
-    Evaluate sequence classification accuracy by taking the argmax of the logits (Task-IL).
+    Evaluate sequence classification accuracy — Class-IL protocol.
+
+    The model predicts from all *seen* classes (indices 0 .. num_seen_classes-1)
+    without knowing which task the sample belongs to.  No task identity is used.
+
+    Args:
+        num_seen_classes: total number of classes trained so far (cumulative).
+            Logits beyond this index are masked to -inf so the model cannot
+            "cheat" by firing on future, unseen class slots.
+            If None, all logits are used (effectively treating all classes as seen).
     """
     model.eval()
     correct = 0
     total = 0
-
-    dataset = eval_loader.dataset
-    label_offset = dataset.label_offset
-    num_classes = dataset.cfg.get("num_classes", 2)
-    allowed_labels = list(range(label_offset, label_offset + num_classes))
 
     for batch in eval_loader:
         input_ids = batch["input_ids"].to(device)
@@ -275,15 +285,18 @@ def evaluate_accuracy(model, eval_loader, tokenizer, device="cuda", max_gen=16) 
             input_ids=input_ids,
             attention_mask=attention_mask,
         )
-        logits = outputs.logits
-        
-        # Task-IL masking: ignore classes outside of this task's domain
-        mask = torch.ones_like(logits, dtype=torch.bool)
-        mask[:, allowed_labels] = False
-        logits = logits.masked_fill(mask, float('-inf'))
-        
+        logits = outputs.logits  # shape: (B, total_classes)
+
+        # Class-IL masking: restrict predictions to seen classes only.
+        # This prevents the model from accidentally predicting future class slots
+        # that have never been trained, while still requiring it to disambiguate
+        # across ALL seen classes without any task hint.
+        if num_seen_classes is not None and num_seen_classes < logits.size(1):
+            logits = logits.clone()
+            logits[:, num_seen_classes:] = float("-inf")
+
         preds = logits.argmax(dim=-1)
-        
+
         correct += (preds == labels).sum().item()
         total += labels.size(0)
 

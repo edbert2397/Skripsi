@@ -1,0 +1,650 @@
+{
+  "Soft Only": {
+    "method": "DLOG",
+    "config": {
+      "projection_type": "parameter",
+      "use_soft": true,
+      "use_hard": false,
+      "lambda_orth": 0.1,
+      "lora_rank": 8,
+      "ema_decay": 0.99
+    },
+    "cl_metrics": {
+      "Final Performance (FP)": 0.925,
+      "Average Performance (AP)": 0.927,
+      "Forgetting (FT)": 0.0040000000000000036,
+      "Backward Transfer (BWT)": -0.0040000000000000036,
+      "Learning Accuracy (LA)": 0.927,
+      "Performance Matrix": [
+        [
+          0.954,
+          0.276
+        ],
+        [
+          0.95,
+          0.9
+        ]
+      ]
+    },
+    "cl_metrics_premerge": {
+      "Final Performance (FP)": 0.925,
+      "Average Performance (AP)": 0.927,
+      "Forgetting (FT)": 0.0040000000000000036,
+      "Backward Transfer (BWT)": -0.0040000000000000036,
+      "Learning Accuracy (LA)": 0.927,
+      "Performance Matrix": [
+        [
+          0.954,
+          0.276
+        ],
+        [
+          0.95,
+          0.9
+        ]
+      ]
+    },
+    "efficiency": {
+      "total_time_sec": 2903.72,
+      "forward_passes": 1340,
+      "projection_time_sec": 0.0,
+      "projection_overhead_pct": 0.0,
+      "peak_memory_mb": 3962.0
+    },
+    "gradient_conflict": [],
+    "subspace_overlap": {
+      "mean_A_separation": 0.9404626327034619,
+      "mean_B_separation": 0.9011373061553708
+    },
+    "train_log": [
+      {
+        "task": "sst2",
+        "step": 50,
+        "task_loss": 0.70703125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 100,
+        "task_loss": 0.0625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 150,
+        "task_loss": 0.2158203125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 200,
+        "task_loss": 0.004852294921875,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 250,
+        "task_loss": 0.0223388671875,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 300,
+        "task_loss": 0.2265625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 350,
+        "task_loss": 0.00201416015625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 400,
+        "task_loss": 0.047119140625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 450,
+        "task_loss": 0.359375,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 500,
+        "task_loss": 0.01556396484375,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 550,
+        "task_loss": 0.431640625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 600,
+        "task_loss": 0.004425048828125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 650,
+        "task_loss": 0.01416015625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 50,
+        "task_loss": 1.0078125,
+        "orth_loss": 0.0392763614654541
+      },
+      {
+        "task": "ag_news",
+        "step": 100,
+        "task_loss": 0.38671875,
+        "orth_loss": 0.015276819467544556
+      },
+      {
+        "task": "ag_news",
+        "step": 150,
+        "task_loss": 0.2158203125,
+        "orth_loss": 0.010640949010848999
+      },
+      {
+        "task": "ag_news",
+        "step": 200,
+        "task_loss": 0.1689453125,
+        "orth_loss": 0.009560912847518921
+      },
+      {
+        "task": "ag_news",
+        "step": 250,
+        "task_loss": 0.458984375,
+        "orth_loss": 0.008080922067165375
+      },
+      {
+        "task": "ag_news",
+        "step": 300,
+        "task_loss": 0.40625,
+        "orth_loss": 0.007360093295574188
+      },
+      {
+        "task": "ag_news",
+        "step": 350,
+        "task_loss": 0.3671875,
+        "orth_loss": 0.007075831294059753
+      },
+      {
+        "task": "ag_news",
+        "step": 400,
+        "task_loss": 0.275390625,
+        "orth_loss": 0.006644591689109802
+      },
+      {
+        "task": "ag_news",
+        "step": 450,
+        "task_loss": 0.01544189453125,
+        "orth_loss": 0.005945809185504913
+      },
+      {
+        "task": "ag_news",
+        "step": 500,
+        "task_loss": 0.4453125,
+        "orth_loss": 0.006076008081436157
+      },
+      {
+        "task": "ag_news",
+        "step": 550,
+        "task_loss": 0.162109375,
+        "orth_loss": 0.005904685705900192
+      },
+      {
+        "task": "ag_news",
+        "step": 600,
+        "task_loss": 0.609375,
+        "orth_loss": 0.005680114030838013
+      },
+      {
+        "task": "ag_news",
+        "step": 650,
+        "task_loss": 0.054443359375,
+        "orth_loss": 0.005670497193932533
+      }
+    ],
+    "ablation_name": "Soft Only"
+  },
+  "Hard Only (Parameter)": {
+    "method": "DLOG",
+    "config": {
+      "projection_type": "parameter",
+      "use_soft": false,
+      "use_hard": true,
+      "lambda_orth": 0.01,
+      "lora_rank": 8,
+      "ema_decay": 0.99
+    },
+    "cl_metrics": {
+      "Final Performance (FP)": 0.925,
+      "Average Performance (AP)": 0.927,
+      "Forgetting (FT)": 0.0040000000000000036,
+      "Backward Transfer (BWT)": -0.0040000000000000036,
+      "Learning Accuracy (LA)": 0.927,
+      "Performance Matrix": [
+        [
+          0.954,
+          0.276
+        ],
+        [
+          0.95,
+          0.9
+        ]
+      ]
+    },
+    "cl_metrics_premerge": {
+      "Final Performance (FP)": 0.925,
+      "Average Performance (AP)": 0.9279999999999999,
+      "Forgetting (FT)": 0.006000000000000005,
+      "Backward Transfer (BWT)": -0.006000000000000005,
+      "Learning Accuracy (LA)": 0.9279999999999999,
+      "Performance Matrix": [
+        [
+          0.954,
+          0.276
+        ],
+        [
+          0.948,
+          0.902
+        ]
+      ]
+    },
+    "efficiency": {
+      "total_time_sec": 2882.18,
+      "forward_passes": 1340,
+      "projection_time_sec": 45.9599,
+      "projection_overhead_pct": 1.59,
+      "peak_memory_mb": 3962.0
+    },
+    "gradient_conflict": [],
+    "subspace_overlap": {
+      "mean_A_separation": 0.9402386666541653,
+      "mean_B_separation": 0.9011692640903805
+    },
+    "train_log": [
+      {
+        "task": "sst2",
+        "step": 50,
+        "task_loss": 0.70703125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 100,
+        "task_loss": 0.0625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 150,
+        "task_loss": 0.2158203125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 200,
+        "task_loss": 0.004852294921875,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 250,
+        "task_loss": 0.0223388671875,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 300,
+        "task_loss": 0.2265625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 350,
+        "task_loss": 0.00201416015625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 400,
+        "task_loss": 0.047119140625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 450,
+        "task_loss": 0.359375,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 500,
+        "task_loss": 0.01556396484375,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 550,
+        "task_loss": 0.431640625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 600,
+        "task_loss": 0.004425048828125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 650,
+        "task_loss": 0.01416015625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 50,
+        "task_loss": 1.015625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 100,
+        "task_loss": 0.384765625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 150,
+        "task_loss": 0.212890625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 200,
+        "task_loss": 0.166015625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 250,
+        "task_loss": 0.45703125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 300,
+        "task_loss": 0.384765625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 350,
+        "task_loss": 0.357421875,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 400,
+        "task_loss": 0.27734375,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 450,
+        "task_loss": 0.01531982421875,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 500,
+        "task_loss": 0.431640625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 550,
+        "task_loss": 0.1533203125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 600,
+        "task_loss": 0.609375,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 650,
+        "task_loss": 0.05517578125,
+        "orth_loss": 0.0
+      }
+    ],
+    "ablation_name": "Hard Only (Parameter)"
+  },
+  "Soft + Hard (Parameter)": {
+    "method": "DLOG",
+    "config": {
+      "projection_type": "parameter",
+      "use_soft": true,
+      "use_hard": true,
+      "lambda_orth": 0.01,
+      "lora_rank": 8,
+      "ema_decay": 0.99
+    },
+    "cl_metrics": {
+      "Final Performance (FP)": 0.927,
+      "Average Performance (AP)": 0.9279999999999999,
+      "Forgetting (FT)": 0.0020000000000000018,
+      "Backward Transfer (BWT)": -0.0020000000000000018,
+      "Learning Accuracy (LA)": 0.9279999999999999,
+      "Performance Matrix": [
+        [
+          0.954,
+          0.276
+        ],
+        [
+          0.952,
+          0.902
+        ]
+      ]
+    },
+    "cl_metrics_premerge": {
+      "Final Performance (FP)": 0.927,
+      "Average Performance (AP)": 0.9279999999999999,
+      "Forgetting (FT)": 0.0020000000000000018,
+      "Backward Transfer (BWT)": -0.0020000000000000018,
+      "Learning Accuracy (LA)": 0.9279999999999999,
+      "Performance Matrix": [
+        [
+          0.954,
+          0.276
+        ],
+        [
+          0.952,
+          0.902
+        ]
+      ]
+    },
+    "efficiency": {
+      "total_time_sec": 2903.74,
+      "forward_passes": 1340,
+      "projection_time_sec": 45.35,
+      "projection_overhead_pct": 1.56,
+      "peak_memory_mb": 3962.6
+    },
+    "gradient_conflict": [],
+    "subspace_overlap": {
+      "mean_A_separation": 0.9402612333984247,
+      "mean_B_separation": 0.901098757915731
+    },
+    "train_log": [
+      {
+        "task": "sst2",
+        "step": 50,
+        "task_loss": 0.70703125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 100,
+        "task_loss": 0.0625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 150,
+        "task_loss": 0.2158203125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 200,
+        "task_loss": 0.004852294921875,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 250,
+        "task_loss": 0.0223388671875,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 300,
+        "task_loss": 0.2265625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 350,
+        "task_loss": 0.00201416015625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 400,
+        "task_loss": 0.047119140625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 450,
+        "task_loss": 0.359375,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 500,
+        "task_loss": 0.01556396484375,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 550,
+        "task_loss": 0.431640625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 600,
+        "task_loss": 0.004425048828125,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "sst2",
+        "step": 650,
+        "task_loss": 0.01416015625,
+        "orth_loss": 0.0
+      },
+      {
+        "task": "ag_news",
+        "step": 50,
+        "task_loss": 1.0078125,
+        "orth_loss": 0.10050079226493835
+      },
+      {
+        "task": "ag_news",
+        "step": 100,
+        "task_loss": 0.380859375,
+        "orth_loss": 0.09382528066635132
+      },
+      {
+        "task": "ag_news",
+        "step": 150,
+        "task_loss": 0.2119140625,
+        "orth_loss": 0.08302831649780273
+      },
+      {
+        "task": "ag_news",
+        "step": 200,
+        "task_loss": 0.166015625,
+        "orth_loss": 0.07958626747131348
+      },
+      {
+        "task": "ag_news",
+        "step": 250,
+        "task_loss": 0.453125,
+        "orth_loss": 0.06366634368896484
+      },
+      {
+        "task": "ag_news",
+        "step": 300,
+        "task_loss": 0.40234375,
+        "orth_loss": 0.05229520797729492
+      },
+      {
+        "task": "ag_news",
+        "step": 350,
+        "task_loss": 0.357421875,
+        "orth_loss": 0.05023980140686035
+      },
+      {
+        "task": "ag_news",
+        "step": 400,
+        "task_loss": 0.26953125,
+        "orth_loss": 0.046608567237854004
+      },
+      {
+        "task": "ag_news",
+        "step": 450,
+        "task_loss": 0.0152587890625,
+        "orth_loss": 0.04521787166595459
+      },
+      {
+        "task": "ag_news",
+        "step": 500,
+        "task_loss": 0.435546875,
+        "orth_loss": 0.04554605484008789
+      },
+      {
+        "task": "ag_news",
+        "step": 550,
+        "task_loss": 0.15625,
+        "orth_loss": 0.045949339866638184
+      },
+      {
+        "task": "ag_news",
+        "step": 600,
+        "task_loss": 0.609375,
+        "orth_loss": 0.045299649238586426
+      },
+      {
+        "task": "ag_news",
+        "step": 650,
+        "task_loss": 0.0517578125,
+        "orth_loss": 0.04534339904785156
+      }
+    ],
+    "ablation_name": "Soft + Hard (Parameter)"
+  }
+}
