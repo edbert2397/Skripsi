@@ -226,11 +226,18 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
     print(f"  LoRA rank: {config.lora_rank}")
     print(f"  Projection: {config.projection_type}")
     print(f"  Soft: {config.use_soft_constraint}, Hard: {config.use_hard_constraint}")
+    print(f"  Replay: {'DISABLED' if config.no_replay else 'enabled'}")
     print(f"{'#'*60}\n")
 
     # --- Load tokenizer ---
     print("Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(config.model_name)
+    # Causal LMs (e.g. Qwen2.5, LLaMA) lack a dedicated pad token;
+    # set pad=eos and right-padding so attention_mask is computed correctly.
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    tokenizer.padding_side = "right"
 
     # --- Build dataloaders ---
     print("Building dataloaders...")
@@ -264,8 +271,9 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
     # =============================================
     # Experiment 2: Baseline (Single LoRA + Replay)
     # =============================================
+    replay_label = "No Replay" if config.no_replay else "Random Replay"
     print("\n" + "="*60)
-    print("  EXPERIMENT 2: Baseline (Single LoRA + Random Replay)")
+    print(f"  EXPERIMENT 2: Baseline (Single LoRA + {replay_label})")
     print("="*60)
 
     set_seed(config.seed)  # Reset seed for fair comparison
@@ -392,6 +400,10 @@ def run_ablation(config: DLOGConfig, smoke_test: bool = False):
     max_eval_samples = 20 if smoke_test else 500
 
     tokenizer = AutoTokenizer.from_pretrained(config.model_name)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    tokenizer.padding_side = "right"
     train_loaders, eval_loaders = build_task_dataloaders(
         config, tokenizer,
         max_train_samples=max_train_samples,
@@ -497,8 +509,9 @@ def main():
                         help="Quick sanity check with minimal steps")
     parser.add_argument("--ablation", action="store_true",
                         help="Run 3 orth ablations (parameter projection only)")
-    parser.add_argument("--model", type=str, default="google/t5gemma-2-1b-1b",
-                        help="Model name (default: google/t5gemma-2-1b-1b)")
+    parser.add_argument("--model", type=str, default="Qwen/Qwen2.5-1.5B",
+                        help="Model name (default: Qwen/Qwen2.5-1.5B). "
+                             "Example: --model Qwen/Qwen2.5-0.5B")
     parser.add_argument("--rank", type=int, default=8,
                         help="LoRA rank (default: 8)")
     parser.add_argument("--steps", type=int, default=None,
@@ -514,6 +527,8 @@ def main():
                         help="Disable soft constraint")
     parser.add_argument("--no-hard", action="store_true",
                         help="Disable hard constraint")
+    parser.add_argument("--no-replay", action="store_true",
+                        help="Disable replay for ALL methods (pure sequential fine-tuning)")
     parser.add_argument("--cpu", action="store_true",
                         help="Force CPU (for testing)")
 
@@ -526,6 +541,7 @@ def main():
         projection_type=args.projection,
         use_soft_constraint=not args.no_soft,
         use_hard_constraint=not args.no_hard,
+        no_replay=args.no_replay,
         output_dir=args.output_dir,
         device="cpu" if args.cpu else ("cuda" if torch.cuda.is_available() else "cpu"),
         fp16=False,  # Disabled: multi-backward loop incompatible with GradScaler

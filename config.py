@@ -13,8 +13,8 @@ class DLOGConfig:
     model_name: str = "Qwen/Qwen2.5-1.5B"
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     fp16: bool = False  # Disabled: GradScaler conflicts with multi-backward training loop
-    lora_rank: int = 8
-    lora_alpha: float = 8
+    lora_rank: int = 16
+    lora_alpha: float = 16
     target_modules: Optional[List[str]] = None
 
     # --- Orthogonal Gating ---
@@ -50,8 +50,9 @@ class DLOGConfig:
     # constant throughout the task, ensuring a stable, fixed null-space projection.
 
     # --- Replay ---
-    replay_buffer_size: int = 750       # per task
-    replay_ratio: float = 0.2          # fraction of replay in each batch
+    no_replay: bool = False            # if True, disable replay for ALL methods (pure sequential fine-tuning)
+    replay_buffer_size: int = 400       # per task
+    replay_ratio: float = 0.1          # fraction of replay in each batch
     replay_strategy: str = "reservoir"  # "random" or "reservoir"
 
     # --- Vibe Coding Tasks (SST-2 Sentiment → AG News Topic) ---
@@ -59,8 +60,8 @@ class DLOGConfig:
         default_factory=lambda: [
             "sst2",
             "ag_news",
-            # "amazon_reviews",
-            # "dbpedia_14"
+            "amazon_reviews",
+            "dbpedia_14"
         ]
     )
 
@@ -89,6 +90,10 @@ class DLOGConfig:
     seed: int = 42
 
     def __post_init__(self):
+        # No-replay mode: disable IPC freezing too (pure sequential fine-tuning)
+        if self.no_replay:
+            self.ipc_enabled = False
+
         # Auto-derive lambda_orth from constraint mode
         if self.auto_lambda_orth:
             self.lambda_orth = 0.01 if self.use_hard_constraint else 0.1
@@ -100,15 +105,19 @@ class DLOGConfig:
                 self.target_modules = ["q_proj", "v_proj"]
             elif "gemma" in name_lower or "llama" in name_lower:
                 self.target_modules = ["q_proj", "v_proj", "k_proj", "o_proj"]
+            elif "qwen" in name_lower:
+                self.target_modules = ["q_proj", "v_proj", "k_proj", "o_proj"]
             elif "t5" in name_lower:
                 self.target_modules = ["q", "v"]
             else:
                 self.target_modules = ["q_proj", "v_proj"]
 
-        # Save results/checkpoints in model-specific subdirectories
+        # Save results/checkpoints in model-specific subdirectories,
+        # with a replay-mode suffix so runs never overwrite each other.
         safe_model_name = self.model_name.replace("/", "_")
-        self.output_dir = os.path.join(self.output_dir, safe_model_name)
-        self.checkpoint_dir = os.path.join(self.checkpoint_dir, safe_model_name)
+        replay_suffix = "no-replay" if self.no_replay else "replay"
+        self.output_dir = os.path.join(self.output_dir, safe_model_name, replay_suffix)
+        self.checkpoint_dir = os.path.join(self.checkpoint_dir, safe_model_name, replay_suffix)
 
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(self.checkpoint_dir, exist_ok=True)

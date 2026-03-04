@@ -1,305 +1,305 @@
 {
   "method": "Baseline (Single LoRA + Replay)",
   "cl_metrics": {
-    "Final Performance (FP)": 0.944,
-    "Average Performance (AP)": 0.9455,
-    "Forgetting (FT)": 0.0046666666666666705,
-    "Backward Transfer (BWT)": -0.0020000000000000018,
-    "Learning Accuracy (LA)": 0.9455,
+    "Final Performance (FP)": 0.925,
+    "Average Performance (AP)": 0.9339999999999999,
+    "Forgetting (FT)": 0.013333333333333345,
+    "Backward Transfer (BWT)": -0.01200000000000001,
+    "Learning Accuracy (LA)": 0.9339999999999999,
     "Performance Matrix": [
       [
-        0.954,
+        0.922,
         0.0,
         0.0,
         0.0
       ],
       [
-        0.948,
-        0.896,
-        0.0,
-        0.0
-      ],
-      [
-        0.954,
+        0.924,
         0.888,
-        0.956,
+        0.0,
         0.0
       ],
       [
-        0.942,
-        0.894,
-        0.964,
+        0.926,
+        0.88,
+        0.95,
+        0.0
+      ],
+      [
+        0.922,
+        0.862,
+        0.94,
         0.976
       ]
     ]
   },
   "efficiency": {
-    "total_time_sec": 5899.64,
+    "total_time_sec": 1869.6,
     "forward_passes": 2680,
     "projection_time_sec": 0.0,
     "projection_overhead_pct": 0.0,
-    "peak_memory_mb": 3966.0
+    "peak_memory_mb": 1454.3
   },
   "train_log": [
     {
       "task": "sst2",
       "step": 50,
-      "loss": 1.046875
+      "loss": 1.1171875
     },
     {
       "task": "sst2",
       "step": 100,
-      "loss": 0.1337890625
+      "loss": 0.189453125
     },
     {
       "task": "sst2",
       "step": 150,
-      "loss": 0.076171875
+      "loss": 0.09375
     },
     {
       "task": "sst2",
       "step": 200,
-      "loss": 0.15625
+      "loss": 0.1025390625
     },
     {
       "task": "sst2",
       "step": 250,
-      "loss": 0.455078125
+      "loss": 0.2255859375
     },
     {
       "task": "sst2",
       "step": 300,
-      "loss": 0.1748046875
+      "loss": 0.134765625
     },
     {
       "task": "sst2",
       "step": 350,
-      "loss": 0.1728515625
+      "loss": 0.1328125
     },
     {
       "task": "sst2",
       "step": 400,
-      "loss": 0.0294189453125
+      "loss": 0.059326171875
     },
     {
       "task": "sst2",
       "step": 450,
-      "loss": 0.0712890625
+      "loss": 0.48828125
     },
     {
       "task": "sst2",
       "step": 500,
-      "loss": 0.40625
+      "loss": 0.328125
     },
     {
       "task": "sst2",
       "step": 550,
-      "loss": 0.004669189453125
+      "loss": 0.20703125
     },
     {
       "task": "sst2",
       "step": 600,
-      "loss": 0.00653076171875
+      "loss": 0.09423828125
     },
     {
       "task": "sst2",
       "step": 650,
-      "loss": 0.00191497802734375
+      "loss": 0.1552734375
     },
     {
       "task": "ag_news",
       "step": 50,
-      "loss": 2.109375
+      "loss": 1.484375
     },
     {
       "task": "ag_news",
       "step": 100,
-      "loss": 0.287109375
+      "loss": 0.8515625
     },
     {
       "task": "ag_news",
       "step": 150,
-      "loss": 0.255859375
+      "loss": 0.384765625
     },
     {
       "task": "ag_news",
       "step": 200,
-      "loss": 0.67578125
+      "loss": 0.2578125
     },
     {
       "task": "ag_news",
       "step": 250,
-      "loss": 0.2216796875
+      "loss": 0.04931640625
     },
     {
       "task": "ag_news",
       "step": 300,
-      "loss": 0.1494140625
+      "loss": 0.0162353515625
     },
     {
       "task": "ag_news",
       "step": 350,
-      "loss": 0.392578125
+      "loss": 0.169921875
     },
     {
       "task": "ag_news",
       "step": 400,
-      "loss": 0.041015625
+      "loss": 0.07080078125
     },
     {
       "task": "ag_news",
       "step": 450,
-      "loss": 0.0595703125
+      "loss": 0.64453125
     },
     {
       "task": "ag_news",
       "step": 500,
-      "loss": 0.014404296875
+      "loss": 0.1083984375
     },
     {
       "task": "ag_news",
       "step": 550,
-      "loss": 0.322265625
+      "loss": 0.23828125
     },
     {
       "task": "ag_news",
       "step": 600,
-      "loss": 0.74609375
+      "loss": 0.419921875
     },
     {
       "task": "ag_news",
       "step": 650,
-      "loss": 0.21875
+      "loss": 0.140625
     },
     {
       "task": "amazon_reviews",
       "step": 50,
-      "loss": 0.09033203125
+      "loss": 0.1640625
     },
     {
       "task": "amazon_reviews",
       "step": 100,
-      "loss": 0.166015625
+      "loss": 0.220703125
     },
     {
       "task": "amazon_reviews",
       "step": 150,
-      "loss": 0.13671875
+      "loss": 0.46484375
     },
     {
       "task": "amazon_reviews",
       "step": 200,
-      "loss": 0.1884765625
+      "loss": 0.18359375
     },
     {
       "task": "amazon_reviews",
       "step": 250,
-      "loss": 0.051025390625
+      "loss": 0.2138671875
     },
     {
       "task": "amazon_reviews",
       "step": 300,
-      "loss": 0.66015625
+      "loss": 0.0673828125
     },
     {
       "task": "amazon_reviews",
       "step": 350,
-      "loss": 0.0257568359375
+      "loss": 0.31640625
     },
     {
       "task": "amazon_reviews",
       "step": 400,
-      "loss": 0.49609375
+      "loss": 0.00811767578125
     },
     {
       "task": "amazon_reviews",
       "step": 450,
-      "loss": 0.19140625
+      "loss": 0.546875
     },
     {
       "task": "amazon_reviews",
       "step": 500,
-      "loss": 0.0189208984375
+      "loss": 0.052978515625
     },
     {
       "task": "amazon_reviews",
       "step": 550,
-      "loss": 0.055908203125
+      "loss": 0.032958984375
     },
     {
       "task": "amazon_reviews",
       "step": 600,
-      "loss": 0.005615234375
+      "loss": 0.365234375
     },
     {
       "task": "amazon_reviews",
       "step": 650,
-      "loss": 0.392578125
+      "loss": 0.0458984375
     },
     {
       "task": "dbpedia_14",
       "step": 50,
-      "loss": 2.15625
+      "loss": 2.671875
     },
     {
       "task": "dbpedia_14",
       "step": 100,
-      "loss": 0.298828125
+      "loss": 0.79296875
     },
     {
       "task": "dbpedia_14",
       "step": 150,
-      "loss": 0.00102996826171875
+      "loss": 0.0634765625
     },
     {
       "task": "dbpedia_14",
       "step": 200,
-      "loss": 0.58203125
+      "loss": 0.00799560546875
     },
     {
       "task": "dbpedia_14",
       "step": 250,
-      "loss": 0.0003147125244140625
+      "loss": 0.00019073486328125
     },
     {
       "task": "dbpedia_14",
       "step": 300,
-      "loss": 0.2236328125
+      "loss": 0.0004749298095703125
     },
     {
       "task": "dbpedia_14",
       "step": 350,
-      "loss": 0.000568389892578125
+      "loss": 0.00136566162109375
     },
     {
       "task": "dbpedia_14",
       "step": 400,
-      "loss": 0.000453948974609375
+      "loss": 0.00225830078125
     },
     {
       "task": "dbpedia_14",
       "step": 450,
-      "loss": 0.000614166259765625
+      "loss": 0.00518798828125
     },
     {
       "task": "dbpedia_14",
       "step": 500,
-      "loss": 0.0091552734375
+      "loss": 3.910064697265625e-05
     },
     {
       "task": "dbpedia_14",
       "step": 550,
-      "loss": 0.0390625
+      "loss": 4.9591064453125e-05
     },
     {
       "task": "dbpedia_14",
       "step": 600,
-      "loss": 0.0002422332763671875
+      "loss": 1.0390625
     },
     {
       "task": "dbpedia_14",
       "step": 650,
-      "loss": 0.000522613525390625
+      "loss": 0.00016021728515625
     }
   ]
 }

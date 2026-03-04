@@ -1,0 +1,409 @@
+{
+  "method": "DLOG",
+  "config": {
+    "projection_type": "parameter",
+    "use_soft": true,
+    "use_hard": true,
+    "lambda_orth": 0.01,
+    "lora_rank": 8,
+    "ema_decay": 0.99,
+    "task_order": [
+      "sst2",
+      "ag_news",
+      "amazon_reviews",
+      "dbpedia_14"
+    ]
+  },
+  "cl_metrics": {
+    "Final Performance (FP)": 0.929,
+    "Average Performance (AP)": 0.9355,
+    "Forgetting (FT)": 0.008666666666666675,
+    "Backward Transfer (BWT)": -0.008666666666666675,
+    "Learning Accuracy (LA)": 0.9355,
+    "Performance Matrix": [
+      [
+        0.936,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.918,
+        0.886,
+        0.0,
+        0.0
+      ],
+      [
+        0.908,
+        0.878,
+        0.942,
+        0.0
+      ],
+      [
+        0.92,
+        0.88,
+        0.938,
+        0.978
+      ]
+    ]
+  },
+  "cl_metrics_premerge": {
+    "Final Performance (FP)": 0.9295,
+    "Average Performance (AP)": 0.9375,
+    "Forgetting (FT)": 0.010666666666666677,
+    "Backward Transfer (BWT)": -0.010666666666666677,
+    "Learning Accuracy (LA)": 0.9375,
+    "Performance Matrix": [
+      [
+        0.936,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.918,
+        0.886,
+        0.0,
+        0.0
+      ],
+      [
+        0.906,
+        0.878,
+        0.95,
+        0.0
+      ],
+      [
+        0.922,
+        0.878,
+        0.94,
+        0.978
+      ]
+    ]
+  },
+  "efficiency": {
+    "total_time_sec": 2363.04,
+    "forward_passes": 2680,
+    "projection_time_sec": 138.8129,
+    "projection_overhead_pct": 5.87,
+    "peak_memory_mb": 1454.3
+  },
+  "gradient_conflict": [],
+  "subspace_overlap": {
+    "mean_A_separation": 0.9220878790753583,
+    "mean_B_separation": 0.8593533507470662
+  },
+  "train_log": [
+    {
+      "task": "sst2",
+      "step": 50,
+      "task_loss": 0.4609375,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 100,
+      "task_loss": 0.056884765625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 150,
+      "task_loss": 0.1513671875,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 200,
+      "task_loss": 0.0751953125,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 250,
+      "task_loss": 0.2158203125,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 300,
+      "task_loss": 0.08447265625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 350,
+      "task_loss": 0.1591796875,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 400,
+      "task_loss": 0.1337890625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 450,
+      "task_loss": 0.57421875,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 500,
+      "task_loss": 0.318359375,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 550,
+      "task_loss": 0.306640625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 600,
+      "task_loss": 0.1962890625,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "sst2",
+      "step": 650,
+      "task_loss": 0.201171875,
+      "orth_loss": 0.0
+    },
+    {
+      "task": "ag_news",
+      "step": 50,
+      "task_loss": 1.8671875,
+      "orth_loss": 0.06656539440155029
+    },
+    {
+      "task": "ag_news",
+      "step": 100,
+      "task_loss": 0.1279296875,
+      "orth_loss": 0.07263573259115219
+    },
+    {
+      "task": "ag_news",
+      "step": 150,
+      "task_loss": 0.337890625,
+      "orth_loss": 0.07728338241577148
+    },
+    {
+      "task": "ag_news",
+      "step": 200,
+      "task_loss": 0.640625,
+      "orth_loss": 0.07716220617294312
+    },
+    {
+      "task": "ag_news",
+      "step": 250,
+      "task_loss": 0.7734375,
+      "orth_loss": 0.07713475823402405
+    },
+    {
+      "task": "ag_news",
+      "step": 300,
+      "task_loss": 0.197265625,
+      "orth_loss": 0.07792812585830688
+    },
+    {
+      "task": "ag_news",
+      "step": 350,
+      "task_loss": 0.79296875,
+      "orth_loss": 0.07786161452531815
+    },
+    {
+      "task": "ag_news",
+      "step": 400,
+      "task_loss": 0.2021484375,
+      "orth_loss": 0.07945878803730011
+    },
+    {
+      "task": "ag_news",
+      "step": 450,
+      "task_loss": 0.228515625,
+      "orth_loss": 0.07955673336982727
+    },
+    {
+      "task": "ag_news",
+      "step": 500,
+      "task_loss": 0.40625,
+      "orth_loss": 0.07962403446435928
+    },
+    {
+      "task": "ag_news",
+      "step": 550,
+      "task_loss": 0.5625,
+      "orth_loss": 0.07986446470022202
+    },
+    {
+      "task": "ag_news",
+      "step": 600,
+      "task_loss": 0.2099609375,
+      "orth_loss": 0.0799027755856514
+    },
+    {
+      "task": "ag_news",
+      "step": 650,
+      "task_loss": 0.57421875,
+      "orth_loss": 0.07994300127029419
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 50,
+      "task_loss": 0.056396484375,
+      "orth_loss": 0.11022395640611649
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 100,
+      "task_loss": 0.1552734375,
+      "orth_loss": 0.11125743389129639
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 150,
+      "task_loss": 0.01806640625,
+      "orth_loss": 0.11228252202272415
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 200,
+      "task_loss": 0.08740234375,
+      "orth_loss": 0.11469735205173492
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 250,
+      "task_loss": 0.162109375,
+      "orth_loss": 0.11505478620529175
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 300,
+      "task_loss": 0.08837890625,
+      "orth_loss": 0.11716482043266296
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 350,
+      "task_loss": 0.046142578125,
+      "orth_loss": 0.11754847317934036
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 400,
+      "task_loss": 0.2333984375,
+      "orth_loss": 0.11780592799186707
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 450,
+      "task_loss": 0.2099609375,
+      "orth_loss": 0.1177031621336937
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 500,
+      "task_loss": 0.369140625,
+      "orth_loss": 0.11796314269304276
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 550,
+      "task_loss": 0.025634765625,
+      "orth_loss": 0.11799819022417068
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 600,
+      "task_loss": 0.0247802734375,
+      "orth_loss": 0.11810437589883804
+    },
+    {
+      "task": "amazon_reviews",
+      "step": 650,
+      "task_loss": 0.408203125,
+      "orth_loss": 0.11803539842367172
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 50,
+      "task_loss": 2.34375,
+      "orth_loss": 0.12723571062088013
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 100,
+      "task_loss": 0.1396484375,
+      "orth_loss": 0.13144774734973907
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 150,
+      "task_loss": 0.0274658203125,
+      "orth_loss": 0.13660100102424622
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 200,
+      "task_loss": 0.0003986358642578125,
+      "orth_loss": 0.13743048906326294
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 250,
+      "task_loss": 0.259765625,
+      "orth_loss": 0.13779497146606445
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 300,
+      "task_loss": 8.296966552734375e-05,
+      "orth_loss": 0.13949346542358398
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 350,
+      "task_loss": 0.1162109375,
+      "orth_loss": 0.13961860537528992
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 400,
+      "task_loss": 0.00010395050048828125,
+      "orth_loss": 0.13998040556907654
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 450,
+      "task_loss": 0.00133514404296875,
+      "orth_loss": 0.1395360231399536
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 500,
+      "task_loss": 9.34600830078125e-05,
+      "orth_loss": 0.1395075023174286
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 550,
+      "task_loss": 0.00011587142944335938,
+      "orth_loss": 0.13977143168449402
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 600,
+      "task_loss": 7.2479248046875e-05,
+      "orth_loss": 0.13966596126556396
+    },
+    {
+      "task": "dbpedia_14",
+      "step": 650,
+      "task_loss": 0.00015926361083984375,
+      "orth_loss": 0.13965368270874023
+    }
+  ]
+}

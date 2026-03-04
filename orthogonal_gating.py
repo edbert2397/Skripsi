@@ -38,49 +38,52 @@ def compute_orth_loss(dual_layers: List[DualLoRALinear]) -> torch.Tensor:
 
 
 # ======================================================================
-# 2. Hard Orthogonality — Parameter-Subspace Projection
+# 2. Hard Orthogonality — Parameter-Subspace Projection (GPM-style)
 # ======================================================================
 @torch.no_grad()
 def project_gradients_parameter(dual_layers: List[DualLoRALinear]):
     """
-    Simplified Sherman-Morrison projection (from proposal Section 3.1).
-    
-    P_slow = I - (A_s @ A_s^T) / (||A_s||^2 + λ)
-    ∇θ_fast⊥ = P_slow @ ∇θ_fast  (projection in rank space)
-    
-    This is computationally cheaper than full Gram matrix inversion
-    and matches the thesis mathematical formulation exactly.
+    Null-space projection in the FEATURE space (d_in / d_out), NOT rank space.
+
+    For A_fast (shape [r, d_in]):
+        A_slow's rows span an r-dim subspace of R^{d_in}.
+        We compute an orthonormal basis Q_A of that subspace via QR,
+        then project each gradient row into its orthogonal complement:
+            g_proj = g  -  (g @ Q_A) @ Q_A^T          …shape [r, d_in]
+
+    For B_fast (shape [d_out, r]):
+        B_slow's columns span an r-dim subspace of R^{d_out}.
+        Orthonormal basis Q_B via QR, then:
+            g_proj = g  -  Q_B @ (Q_B^T @ g)          …shape [d_out, r]
+
+    Computational cost per layer: one thin QR  O(d · r²)  plus two
+    matmuls  O(d · r²) — negligible for r = 8.
+
+    Reference: Saha et al., "Gradient Projection Memory for Continual
+    Learning", ICLR 2021 — adapted here for LoRA parameter matrices
+    instead of feature activations.
     """
-    lambda_reg = 1e-6
-    
     for layer in dual_layers:
         A_s, B_s = layer.get_slow_params()
         A_f, B_f = layer.get_fast_params()
 
-        # --- Project A_fast gradient ---
-        if A_f.grad is not None:
-            g = A_f.grad  # [r, d]
-            g_dtype = g.dtype
-            # Sherman-Morrison simplified projection
-            # P_slow = I - (A_s @ A_s^T) / (||A_s||^2 + λ)
-            A_s_fp32 = A_s.float()
-            g_fp32 = g.float()
-            norm_sq = torch.norm(A_s_fp32) ** 2
-            P_slow = torch.eye(A_s_fp32.shape[0], device=A_s_fp32.device, dtype=A_s_fp32.dtype) - \
-                     (A_s_fp32 @ A_s_fp32.T) / (norm_sq + lambda_reg)
-            A_f.grad = (P_slow @ g_fp32).to(dtype=g_dtype)  # Apply projection in rank space
+        # --- Project A_fast gradient into null-space of A_slow row-space ---
+        if A_f.grad is not None and A_s.data.abs().max() > 1e-8:
+            g_dtype = A_f.grad.dtype
+            g = A_f.grad.float()                     # [r, d_in]
+            # QR on A_s^T gives orthonormal basis of A_s's row-space
+            Q_A, _ = torch.linalg.qr(A_s.data.float().T)  # [d_in, r]
+            coeff = g @ Q_A                           # [r, r]
+            A_f.grad = (g - coeff @ Q_A.T).to(g_dtype)
 
-        # --- Project B_fast gradient ---
-        if B_f.grad is not None:
-            g = B_f.grad  # [d_out, r]
-            g_dtype = g.dtype
-            # Same formula for B matrices (project on right side)
-            B_s_fp32 = B_s.float()
-            g_fp32 = g.float()
-            norm_sq = torch.norm(B_s_fp32) ** 2
-            P_slow = torch.eye(B_s_fp32.shape[1], device=B_s_fp32.device, dtype=B_s_fp32.dtype) - \
-                     (B_s_fp32.T @ B_s_fp32) / (norm_sq + lambda_reg)
-            B_f.grad = (g_fp32 @ P_slow).to(dtype=g_dtype)  # Apply projection in rank space
+        # --- Project B_fast gradient into null-space of B_slow column-space ---
+        if B_f.grad is not None and B_s.data.abs().max() > 1e-8:
+            g_dtype = B_f.grad.dtype
+            g = B_f.grad.float()                     # [d_out, r]
+            # QR on B_s gives orthonormal basis of B_s's column-space
+            Q_B, _ = torch.linalg.qr(B_s.data.float())    # [d_out, r]
+            coeff = Q_B.T @ g                         # [r, r]
+            B_f.grad = (g - Q_B @ coeff).to(g_dtype)
 
 
 # ======================================================================

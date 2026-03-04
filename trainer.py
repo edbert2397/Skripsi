@@ -241,17 +241,21 @@ class DLOGTrainer:
                     break
 
                 # --- 1. Prepare batch (with replay if not first task) ---
-                if is_first_task:
-                    # No replay for first task, but fill buffer
+                if self.config.no_replay or is_first_task:
                     combined_batch = {k: v.to(self.device) for k, v in batch.items()}
                     replay_batch = None
-                    self.replay_buffer.add_batch(batch)
+                    if not self.config.no_replay:
+                        self.replay_buffer.add_batch(batch)
                 else:
                     combined_batch, replay_batch = create_mixed_batch(
                         batch, self.replay_buffer,
                         replay_ratio=self.config.replay_ratio,
                         device=self.device,
                     )
+                    # Also add current-task samples to the buffer so future tasks
+                    # can replay from ALL past tasks, not just task 1.
+                    # Reservoir sampling ensures uniform coverage over all seen data.
+                    self.replay_buffer.add_batch(batch)
 
                 # --- 2. Pass 1: Memory-gradient basis update (Only if using memory_gradient) ---
                 is_projection_step = (step % self.config.project_every_k == 0)
@@ -341,6 +345,7 @@ class DLOGTrainer:
                     self.config.ipc_enabled
                     and self.ipc_tracker is not None
                     and self.config.ipc_scoring_microbatch_enabled
+                    and not self.config.no_replay
                     and not is_first_task
                     and step % self.config.ipc_scoring_microbatch_every_k_steps == 0
                     and len(self.replay_buffer) > 0
@@ -530,15 +535,18 @@ class BaselineTrainer:
                 if step >= max_steps:
                     break
 
-                if task_idx == 0:
+                if self.config.no_replay or task_idx == 0:
                     combined_batch = {k: v.to(self.device) for k, v in batch.items()}
-                    self.replay_buffer.add_batch(batch)
+                    if not self.config.no_replay:
+                        self.replay_buffer.add_batch(batch)
                 else:
                     combined_batch, _ = create_mixed_batch(
                         batch, self.replay_buffer,
                         replay_ratio=self.config.replay_ratio,
                         device=self.device,
                     )
+                    # Add current-task samples so future tasks replay ALL past tasks.
+                    self.replay_buffer.add_batch(batch)
 
                 optimizer.zero_grad()
                 with autocast(device_type="cuda", enabled=self.config.fp16):
@@ -663,27 +671,30 @@ class SuReTrainer:
 
                 batch_device = {k: v.to(self.device) for k, v in batch.items()}
 
-                # --- Compute NLL (Surprise) ---
-                with torch.no_grad():
-                    outputs_for_nll = self.model(
-                        input_ids=batch_device["input_ids"],
-                        attention_mask=batch_device["attention_mask"],
-                    )
-                    loss_fct = nn.CrossEntropyLoss(reduction='none')
-                    per_sample_nll = loss_fct(outputs_for_nll.logits, batch_device["labels"]).cpu().tolist()
-                self.efficiency.record_forward()
-
-                # Add to Surprise Replay Buffer
-                self.replay_buffer.add_batch(batch, per_sample_nll)
-
-                if is_first_task:
+                if self.config.no_replay:
                     combined_batch = batch_device
                 else:
-                    combined_batch, _ = create_mixed_batch(
-                        batch, self.replay_buffer,
-                        replay_ratio=self.config.replay_ratio,
-                        device=self.device,
-                    )
+                    # --- Compute NLL (Surprise) ---
+                    with torch.no_grad():
+                        outputs_for_nll = self.model(
+                            input_ids=batch_device["input_ids"],
+                            attention_mask=batch_device["attention_mask"],
+                        )
+                        loss_fct = nn.CrossEntropyLoss(reduction='none')
+                        per_sample_nll = loss_fct(outputs_for_nll.logits, batch_device["labels"]).cpu().tolist()
+                    self.efficiency.record_forward()
+
+                    # Add to Surprise Replay Buffer
+                    self.replay_buffer.add_batch(batch, per_sample_nll)
+
+                    if is_first_task:
+                        combined_batch = batch_device
+                    else:
+                        combined_batch, _ = create_mixed_batch(
+                            batch, self.replay_buffer,
+                            replay_ratio=self.config.replay_ratio,
+                            device=self.device,
+                        )
 
                 optimizer.zero_grad()
                 with autocast(device_type="cuda", enabled=self.config.fp16):

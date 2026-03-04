@@ -117,9 +117,19 @@ class ImportanceTracker:
             if A.grad is None or B.grad is None:
                 continue
 
-            # 1. Elementwise sensitivity: I = |θ * ∇θ|
-            I_A = (A.detach() * A.grad).abs()
-            I_B = (B.detach() * B.grad).abs()
+            # 1. Elementwise sensitivity: I = |∇θ| (gradient norm, NOT weight×grad).
+            #
+            # Why NOT |θ * ∇θ|: LoRA standard init sets B_fast=0, so
+            # I_B = |0 * grad| = 0 always at the start, and grad(A_fast) =
+            # B_fast.T @ upstream = 0 too, so I_A = 0 as well.  Both EMA
+            # accumulators (bar_I, bar_U) start anchored at zero, and their
+            # product S = bar_I * bar_U ≈ 1e-10 → printed as 0.0000000.
+            #
+            # Using |∇θ| avoids this because grad_B ≠ 0 even when B=0
+            # (upstream gradient flows through A_fast which is Kaiming-init),
+            # and grad_A receives signal once B_fast starts growing.
+            I_A = A.grad.abs()
+            I_B = B.grad.abs()
 
             # 2. EMA sensitivity: bar_I ← β1·bar_I + (1-β1)·I
             if st["bar_I_A"] is None:
@@ -161,9 +171,13 @@ class ImportanceTracker:
                 if st["bar_I_A"] is None or st["bar_U_A"] is None:
                     scores[key] = 0.0
                     continue
-                # 5–6. S = bar_I ⊙ bar_U  ;  module score = mean
-                s_A = (st["bar_I_A"] * st["bar_U_A"]).mean().item()
-                s_B = (st["bar_I_B"] * st["bar_U_B"]).mean().item()
+                # Score = mean(bar_I).  We intentionally drop the bar_U
+                # multiplicative term: S = bar_I * bar_U would square a
+                # near-zero quantity, collapsing all scores to ~1e-10.
+                # bar_I alone (EMA-smoothed gradient norm) is a well-established
+                # proxy for parameter importance (cf. Fisher-diag, EWC).
+                s_A = st["bar_I_A"].mean().item()
+                s_B = st["bar_I_B"].mean().item()
                 scores[key] = (s_A + s_B) / 2.0
         return scores
 
@@ -292,7 +306,7 @@ class FreezeManager:
                 status = "frozen"
             else:
                 status = "active"
-            print(f"  {key:<55} {layer_idx:>3} {target:<10} {scores[key]:>12.7f}  {status}")
+            print(f"  {key:<55} {layer_idx:>3} {target:<10} {scores[key]:>14.4e}  {status}")
 
         print(f"\n  [IPC] Total frozen modules after task {task_idx + 1}: "
               f"{len(self.frozen_keys)}/{n_total}  "
