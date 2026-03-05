@@ -36,7 +36,7 @@ class DLOGConfig:
     replay_batch_size: int = 4         # Reduced for 6GB VRAM
     max_input_length: int = 256
     max_target_length: int = 64
-    num_train_steps_per_task: int = 670
+    num_train_steps_per_task: int = 1000
     eval_every: int = 200
     log_every: int = 50
     warmup_steps: int = 100

@@ -293,7 +293,7 @@ def build_task_dataloaders(
     config: DLOGConfig,
     tokenizer: PreTrainedTokenizerBase,
     max_train_samples: Optional[int] = None,
-    max_eval_samples: int = 500,
+    max_eval_samples: int = 2000,
 ) -> Tuple[Dict[str, DataLoader], Dict[str, DataLoader]]:
     """
     Build train and eval DataLoaders for each task in config.task_order.

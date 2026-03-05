@@ -1,14 +1,14 @@
 DLOG Experiment Results
-Date: 2026-03-04T10:29:39.623580
+Date: 2026-03-05T11:12:38.454216
 Model: Qwen/Qwen2.5-0.5B
 Tasks: ['sst2', 'ag_news', 'amazon_reviews', 'dbpedia_14']
 
 Metric                                 DLOG     Baseline
 --------------------------------------------------------
-Final Performance (FP)               0.9290       0.9250
-Average Performance (AP)             0.9355       0.9340
-Forgetting (FT)                      0.0087       0.0133
-Backward Transfer (BWT)             -0.0087      -0.0120
-Learning Accuracy (LA)               0.9355       0.9340
-Wall-clock (s)                      2363.04       1869.6
-Forward Passes                         2680         2680
+Final Performance (FP)               0.9335       0.9410
+Average Performance (AP)             0.9440       0.9434
+Forgetting (FT)                      0.0140       0.0032
+Backward Transfer (BWT)             -0.0140      -0.0032
+Learning Accuracy (LA)               0.9440       0.9434
+Wall-clock (s)                      3942.42      2958.62
+Forward Passes                         4000         4000

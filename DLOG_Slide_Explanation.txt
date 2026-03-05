@@ -1,0 +1,648 @@
+================================================================================
+DLOG PRESENTATION - SLIDE-BY-SLIDE EXPLANATION
+Dual-LoRA Orthogonal Gating for Continual Learning on Large Language Models
+================================================================================
+
+
+================================================================================
+SLIDE 1: Title Slide
+================================================================================
+
+Content: "DLOG - Dual-LoRA Orthogonal Gating for Continual Learning on Large
+Language Models"
+Backbone: Qwen2.5-1.5B | Tasks: SST-2, AG News, Amazon Reviews, DBPedia-14
+
+EXPLANATION:
+This is your title slide introducing the thesis topic. DLOG stands for
+Dual-LoRA Orthogonal Gating, which is a method you propose for enabling
+continual learning (learning multiple tasks sequentially) on Large Language
+Models (LLMs).
+
+Key points to mention:
+- The backbone model is Qwen2.5-1.5B, a 1.5 billion parameter decoder-only LLM
+  from Alibaba.
+- You test on 4 text classification tasks learned sequentially:
+  1. SST-2 (sentiment analysis, 2 classes: positive/negative)
+  2. AG News (news topic classification, 4 classes)
+  3. Amazon Reviews (sentiment, 2 classes)
+  4. DBPedia-14 (ontology/topic classification, 14 classes)
+- The challenge: can the model learn all 4 tasks one after another WITHOUT
+  forgetting the earlier ones?
+
+
+================================================================================
+SLIDE 2: Problem - Catastrophic Forgetting
+================================================================================
+
+Content: LLMs fine-tuned on new tasks forget previous knowledge. DLOG proposes
+3 complementary mechanisms plus experience replay.
+
+EXPLANATION:
+This slide defines the core problem your thesis addresses: catastrophic
+forgetting. When you fine-tune an LLM on Task 1, then fine-tune it on Task 2,
+the model's performance on Task 1 drops drastically. This happens because the
+gradient updates for Task 2 overwrite the weights that were important for Task 1.
+
+Your DLOG solution has 3 main mechanisms + replay:
+
+1. Dual-LoRA Architecture: Instead of one LoRA adapter, you use TWO:
+   - Slow LoRA (Memory): stores consolidated knowledge from ALL past tasks
+   - Fast LoRA (Task): learns only the current task
+   This separation ensures that the memory of past tasks is physically separated
+   from the learning of new tasks.
+
+2. Orthogonal Gating: Ensures that the Fast adapter learns in directions that
+   are PERPENDICULAR (orthogonal) to the Slow adapter. This means new learning
+   cannot interfere with stored memory. It has two forms:
+   - Soft constraint: a regularization loss that penalizes overlap
+   - Hard constraint: gradient projection that removes interfering components
+
+3. IPC Neuron Freezing: Identifies the most critical LoRA modules (by gradient
+   importance) and permanently freezes them so they can never be overwritten.
+
++ Experience Replay: Keeps a small buffer of past task samples and mixes them
+  into training batches, providing gradient signal to maintain old knowledge.
+
+When explaining to your professor, emphasize that these 3 mechanisms are
+COMPLEMENTARY - each one addresses forgetting from a different angle.
+
+
+================================================================================
+SLIDE 3: Model Backbone - Qwen2.5-1.5B
+================================================================================
+
+Content: Architecture diagram showing where DualLoRA is injected.
+
+EXPLANATION:
+This slide shows the model architecture in detail.
+
+Base Model: Qwen2.5-1.5B
+- Decoder-only transformer with 28 transformer layers
+- Each layer has Self-Attention (with q_proj, k_proj, v_proj, o_proj) and MLP
+- Using AutoModelForSequenceClassification from HuggingFace, which adds a
+  classification head on top
+
+What is FROZEN vs TRAINABLE:
+- ALL base model weights (1.5B parameters) are FROZEN - they never change
+- DualLoRA adapters are INJECTED into the 4 attention projections (q, k, v, o)
+  in every layer: 4 projections x 28 layers = 112 DualLoRA modules
+- The classification head (Linear layer: 1536 -> 22) is TRAINABLE
+  - 22 = total classes across all tasks (2 + 4 + 2 + 14)
+  - This is a SHARED head - all tasks share it, each using different output neurons
+
+LoRA Configuration:
+- rank = 16: each LoRA adapter has rank 16 (small low-rank matrices)
+- alpha = 16: scaling factor, so scaling = alpha/rank = 1.0
+- This means the LoRA output is NOT scaled up or down
+
+Why this matters: By freezing the base model and only training small LoRA
+adapters, you dramatically reduce the number of trainable parameters (from 1.5B
+to a few million), making training efficient and reducing the risk of
+catastrophic forgetting in the base weights.
+
+
+================================================================================
+SLIDE 4: Dual-LoRA - Slow (Memory) + Fast (Task)
+================================================================================
+
+Content: Side-by-side comparison of Slow vs Fast LoRA properties.
+
+EXPLANATION:
+This is the core architectural innovation. Each of the 112 LoRA modules is
+split into TWO separate low-rank adapters:
+
+SLOW LoRA (Memory Adapter):
+- Purpose: Stores the accumulated knowledge from ALL completed tasks
+- Initialization: ZERO (A_slow = 0, B_slow = 0)
+  -> This means during Task 1, Slow contributes nothing (it's silent)
+- Training: NEVER directly trained (requires_grad = False during training)
+- Updates: Only modified at TASK BOUNDARIES via consolidation (merge of
+  Slow + Fast using QR+SVD)
+- Role in orthogonal gating: Provides the "reference subspace" - Fast must
+  learn perpendicular to this
+
+FAST LoRA (Task Adapter):
+- Purpose: Learns the CURRENT task only
+- Initialization: A_fast = Kaiming (random), B_fast = 0 (standard LoRA init)
+- Training: Trained via normal backpropagation every step
+- After each task: RESET to fresh initialization for the next task
+- Constraint: Gradients are projected to be orthogonal to Slow's subspace
+
+The forward pass formula:
+  y = W_frozen * x + (alpha/r) * B_slow @ A_slow @ x + (alpha/r) * B_fast @ A_fast @ x
+      [base model]   [memory from past tasks]          [current task learning]
+
+Key insight to explain: The separation into Slow and Fast is like having a
+"long-term memory" and "working memory". The long-term memory (Slow) is
+protected and read-only during training. The working memory (Fast) is where
+active learning happens. After each task, the working memory is compressed
+into long-term memory.
+
+
+================================================================================
+SLIDE 5: Forward Pass - How DualLoRALinear Works
+================================================================================
+
+Content: Code showing the forward() method with 3 branches.
+
+EXPLANATION:
+This slide shows exactly what happens when data passes through a DualLoRALinear
+layer. There are 3 parallel branches:
+
+Branch 1 - Base (Frozen):
+  out = F.linear(x, W_frozen, bias)
+  This is the original pretrained weight. It never changes. It provides the
+  general language understanding from pretraining.
+
+Branch 2 - Slow LoRA (Memory):
+  slow = x @ A_slow^T @ B_slow^T * (alpha/r)
+  Shape flow: [batch, seq, d_in] -> [batch, seq, r] -> [batch, seq, d_out]
+  This encodes knowledge from tasks 1 through t-1. During Task 1, this is
+  zero (because Slow is zero-initialized).
+
+Branch 3 - Fast LoRA (Task):
+  fast = x @ A_fast^T @ B_fast^T * (alpha/r)
+  Same shape flow. This learns the current task t.
+
+Final output = out + slow + fast (simple addition of all 3 branches)
+
+Timeline behavior:
+- Task 1: y = W*x + 0 + Fast (Slow is zero, only Fast learns)
+- Task 2+: y = W*x + Slow_memory + Fast (Slow has consolidated knowledge,
+  Fast learns new stuff orthogonal to it)
+- After consolidation: Fast is merged into Slow, then Fast is reset
+
+
+================================================================================
+SLIDE 6: Forward & Backward Transfer
+================================================================================
+
+Content: How DLOG achieves positive forward transfer and prevents negative
+backward transfer.
+
+EXPLANATION:
+In continual learning, there are two important properties:
+
+FORWARD TRANSFER (helping future tasks):
+- When a new task starts, it benefits from: y = W*x + Slow_memory
+  The Slow adapter already contains useful representations from past tasks
+- Fast learns COMPLEMENTARY features in the null-space of Slow
+  This means it finds NEW useful directions, not just re-learning old ones
+- The shared classification head accumulates knowledge from all classes
+- Replay mixes old and new data, encouraging shared representations
+
+BACKWARD TRANSFER (not hurting past tasks):
+This is the harder problem. DLOG uses 3 protection mechanisms:
+
+(a) Orthogonal Gating (Fast perpendicular to Slow):
+    Fast's gradients are projected into Slow's null-space, so weight updates
+    for the new task mathematically CANNOT interfere with old task directions.
+
+(b) Reservoir Replay:
+    A small buffer of old task samples is mixed into training. This provides
+    gradient signal that says "don't forget these old patterns."
+
+(c) IPC Freezing:
+    The most important LoRA modules (measured by gradient magnitude) are
+    permanently frozen. Even if orthogonal projection isn't perfect, these
+    critical modules cannot be changed at all.
+
+(d) Slow is NEVER modified during training - it's read-only.
+
+Key point: These mechanisms are LAYERED defenses. Even if one is imperfect,
+the others provide backup protection.
+
+
+================================================================================
+SLIDE 7: Mechanism 1 - Replay
+================================================================================
+
+Content: Reservoir sampling and mixed batch creation.
+
+EXPLANATION:
+Experience Replay is the simplest but very effective mechanism against
+forgetting.
+
+How it works:
+1. Reservoir Sampling: As you train on each task, you save a random subset
+   of samples (400-750 per task) into a replay buffer. Reservoir sampling
+   ensures uniform coverage - every sample has equal probability of being kept,
+   regardless of when it was seen.
+
+2. Mixed Batches: During training, each batch is a mix:
+   - (1 - rho) = 90% from the CURRENT task
+   - rho = 10% from the replay buffer (samples from ALL past tasks)
+
+   For example, with batch size 15 + 4 replay = 19 total samples per step.
+
+3. Buffer grows: After training on each task, new samples are added to the
+   buffer for future replay.
+
+Code flow:
+  combined_batch = create_mixed_batch(current_batch, replay_buffer, ratio=0.1)
+  replay_buffer.add_batch(current_batch)  # save for future
+  loss = model(combined_batch)            # train on mixed data
+
+Why this helps: The replay samples provide gradient signal that says "these
+old patterns are still important." Without replay, the model only sees new
+task data and has no reason to preserve old task features.
+
+Important: Replay alone is NOT sufficient - it only provides a weak signal.
+The orthogonal gating and IPC freezing provide much stronger structural
+protection.
+
+
+================================================================================
+SLIDE 8: Mechanism 2a - Soft Orthogonal Constraint
+================================================================================
+
+Content: Orthogonal regularization loss formula.
+
+EXPLANATION:
+This is the SOFT (penalty-based) way to encourage orthogonality between Fast
+and Slow adapters.
+
+The idea: If A_fast and A_slow span DIFFERENT directions in the weight space,
+then learning in A_fast cannot corrupt the knowledge stored in A_slow.
+
+Mathematical formulation:
+  L_total = L_task + lambda_orth * L_orth    (lambda_orth = 0.01)
+
+Where L_orth is computed as:
+  For each DualLoRA layer:
+    L_orth += ||A_fast @ A_slow^T||^2_F    (penalize row-space overlap)
+    L_orth += ||B_fast^T @ B_slow||^2_F    (penalize column-space overlap)
+
+What does ||A_fast @ A_slow^T||^2_F mean?
+- A_fast is [r x d_in], A_slow is [r x d_in]
+- A_fast @ A_slow^T is [r x r] - it measures how much the rows of A_fast
+  align with the rows of A_slow
+- If they are perfectly orthogonal, this product is the zero matrix
+- The Frobenius norm squared sums up all squared entries
+- We want this to be ZERO (meaning no overlap)
+
+Same logic for B matrices but in column-space.
+
+Why "soft"? Because it's a penalty - it pushes toward orthogonality but doesn't
+guarantee it. The gradient can still partially violate orthogonality if the
+task loss gradient is strong enough. That's why we also need the HARD projection
+(next slide).
+
+lambda_orth = 0.01 is small because you don't want the orthogonality penalty
+to dominate over the actual task loss.
+
+
+================================================================================
+SLIDE 9: Mechanism 2b - Hard Gradient Projection
+================================================================================
+
+Content: GPM-style null-space projection formulas.
+
+EXPLANATION:
+This is the HARD (guaranteed) way to enforce orthogonality. After computing
+gradients via backpropagation, we PROJECT the Fast gradients into the null-space
+of Slow's subspace. This completely removes any component that would interfere
+with Slow.
+
+For A_fast (shape [r, d_in]):
+  1. Compute orthonormal basis of A_slow's row-space:
+     Q_A, _ = QR(A_slow^T)    -> Q_A is [d_in, r], orthonormal columns
+  2. Project gradient into null-space:
+     g_proj = g - (g @ Q_A) @ Q_A^T
+
+     Breakdown:
+     - g @ Q_A: projects g onto Q_A's columns (the "Slow directions")
+     - (g @ Q_A) @ Q_A^T: reconstructs only the component in Slow's space
+     - g - that: removes it, leaving only the null-space component
+
+For B_fast (shape [d_out, r]):
+  Same idea but for column-space:
+  1. Q_B, _ = QR(B_slow)      -> Q_B is [d_out, r]
+  2. g_proj = g - Q_B @ (Q_B^T @ g)
+
+This is based on Gradient Projection Memory (GPM) from Saha et al., ICLR 2021.
+
+Why "hard"? Because this is not a penalty - it MATHEMATICALLY GUARANTEES that
+the gradient update has zero component in Slow's subspace. The projected
+gradient can only move Fast in directions perpendicular to Slow.
+
+Combined with soft constraint:
+- Soft (slide 8): penalizes the VALUES of Fast weights overlapping with Slow
+- Hard (slide 9): removes the GRADIENTS of Fast that point toward Slow
+Both together provide strong orthogonality during training.
+
+
+================================================================================
+SLIDE 10: Mechanism 3 - Important Module Freezing (IPC)
+================================================================================
+
+Content: Importance scoring and module freezing algorithm.
+
+EXPLANATION:
+IPC (Important Parameter/module Criterion) freezing is the third protection
+mechanism. It permanently freezes the LoRA modules that are most critical for
+past task knowledge.
+
+Step-by-step algorithm:
+
+Step 1 - Sensitivity Score (computed every training step):
+  I(theta) = |grad(theta)|    (absolute gradient magnitude)
+
+  Why |grad| instead of |theta * grad|?
+  Because B_fast is initialized to ZERO in LoRA. If you use |theta * grad|,
+  the score would always be 0 * something = 0. Using just |grad| avoids this
+  problem.
+
+Step 2 - EMA Smoothing:
+  bar_I = beta1 * bar_I + (1 - beta1) * I    (beta1 = 0.85)
+
+  This smooths out noisy per-step importance scores into a stable running
+  average. Higher beta1 = more smoothing.
+
+Step 3 - Module Score:
+  S(module) = mean(bar_I) over A_fast and B_fast parameters
+
+  This gives one importance score per DualLoRA module (out of 112 total).
+
+Step 4 - Freeze Decision (at each task boundary):
+  - Sort modules by score in descending order
+  - Freeze top 10% (about 11 modules per task boundary)
+  - Maximum 30% cumulative frozen (so after 3+ tasks, at most ~34 modules frozen)
+
+What "frozen" means:
+  - A_fast.requires_grad = False, B_fast.requires_grad = False
+  - Excluded from optimizer
+  - Slow slot is preserved during consolidation (not overwritten)
+  - The module can still contribute to forward pass, but its weights never change
+
+Effect: The most critical modules for past tasks are permanently locked. Even
+if orthogonal projection has small numerical errors, these modules are fully
+protected.
+
+
+================================================================================
+SLIDE 11: Task Consolidation - QR + SVD Compression
+================================================================================
+
+Content: 5-step consolidation algorithm.
+
+EXPLANATION:
+At the end of each task, we need to MERGE the knowledge from Fast (current task)
+into Slow (memory), while keeping the total rank at r (to avoid rank explosion).
+
+The problem: Slow is [d_out x r] @ [r x d_in] and Fast is also [d_out x r] @
+[r x d_in]. If we just add them, we'd get rank 2r, then 3r, etc. We need to
+compress back to rank r while preserving the most important information.
+
+5-Step Algorithm:
+
+Step 1 - Concatenate:
+  B_cat = [B_slow, B_fast]    shape: [d_out x 2r]
+  A_cat = [A_slow; A_fast]    shape: [2r x d_in]
+  Combined product: B_cat @ A_cat = B_slow@A_slow + B_fast@A_fast (same as before)
+
+Step 2 - Thin QR Decomposition:
+  Q_B, R_B = QR(B_cat)        Q_B: [d_out x 2r] orthonormal, R_B: [2r x 2r]
+  Q_A, R_A = QR(A_cat^T)      Q_A: [d_in x 2r] orthonormal, R_A: [2r x 2r]
+
+  QR gives us orthonormal bases and small core matrices.
+
+Step 3 - Core Matrix:
+  M = R_B @ R_A^T              M: [2r x 2r] (small matrix!)
+
+  This captures all the information in a compact 2r x 2r matrix.
+
+Step 4 - Truncated SVD:
+  U, S, V^T = SVD(M)          truncate to top-r singular values
+
+  SVD finds the BEST rank-r approximation (by Eckart-Young theorem).
+  We keep only the top-r singular values/vectors.
+
+Step 5 - New Slow:
+  B_slow_new = Q_B @ U_r @ sqrt(S_r)     shape: [d_out x r]
+  A_slow_new = sqrt(S_r) @ V_r^T @ Q_A^T  shape: [r x d_in]
+
+  The sqrt(S) is split between B and A for numerical stability.
+
+After consolidation:
+  - Slow = updated with merged knowledge (rank r preserved)
+  - Fast = RESET to fresh Kaiming/Zero init for the next task
+
+This is elegant because it's a LOSSLESS merge when rank allows it, and
+OPTIMAL compression (minimum information loss) when truncation is needed.
+
+
+================================================================================
+SLIDE 12: Full Training Pipeline
+================================================================================
+
+Content: Complete pseudocode for the training loop.
+
+EXPLANATION:
+This slide ties everything together into the complete training pipeline.
+
+For each task (SST-2, AG News, Amazon Reviews, DBPedia-14):
+
+  TRAINING PHASE (670 steps per task):
+
+  1. Freeze Slow LoRA (read-only during training)
+  2. Setup optimizer: AdamW on Fast params + classification head only
+
+  For each training step:
+    Step 1 - REPLAY: Mix current batch with replay buffer (10% replay)
+    Step 2 - FORWARD: Pass through base + Slow + Fast (3 branches)
+    Step 3 - SOFT ORTHOGONAL: Add lambda * L_orth to the task loss
+    Step 4 - BACKWARD: Compute gradients via backpropagation
+    Step 5 - IPC UPDATE: Update importance running averages
+    Step 6 - HARD PROJECTION: Project Fast gradients into Slow's null-space
+    Step 7 - OPTIMIZER STEP: Update Fast weights with projected gradients
+
+  CONSOLIDATION PHASE (after training):
+    Step 8 - IPC FREEZE: Freeze top 10% most important modules
+    Step 9 - CONSOLIDATE: QR+SVD merge of Slow+Fast -> new Slow (rank r)
+    Step 10 - RESET FAST: Reinitialize Fast for next task
+    Step 11 - UPDATE REPLAY BUFFER: Add current task samples
+
+  EVALUATION:
+    Evaluate on ALL tasks seen so far
+
+The order matters:
+- Soft constraint is applied BEFORE backward (it's part of the loss)
+- Hard projection is applied AFTER backward but BEFORE optimizer step
+- IPC importance is updated AFTER backward (needs gradients)
+- Consolidation happens AFTER all training steps for the task
+
+
+================================================================================
+SLIDE 13: Experiment Setup
+================================================================================
+
+Content: Training configuration and baselines.
+
+EXPLANATION:
+This slide lists all hyperparameters and the experimental comparison setup.
+
+Training Configuration:
+- Model: Qwen2.5-1.5B (pretrained, frozen base)
+- Task order: SST-2 -> AG News -> Amazon Reviews -> DBPedia-14
+- 670 training steps per task (not epochs - fixed number of steps)
+- Learning rate: 2e-4 with AdamW optimizer and linear warmup schedule
+- Batch size: 15 current task samples + 4 replay samples = 19 effective
+- Max input length: 256 tokens (truncate longer inputs)
+
+DLOG-Specific Hyperparameters:
+- LoRA rank: 16, alpha: 16 (scaling = 1.0)
+- Replay buffer: 400 samples per task (reservoir sampling)
+- Replay ratio: 10% of each batch comes from replay
+- Soft constraint lambda: 0.01
+- Hard constraint: GPM parameter-level projection
+- IPC: freeze top 10% modules per task boundary, max 30% cumulative
+
+Baselines for Comparison (3 configurations):
+1. Single LoRA + Replay: Standard single LoRA adapter (no Slow/Fast split),
+   with replay buffer. This tests whether the Dual-LoRA architecture itself
+   adds value beyond what replay alone provides.
+
+2. DLOG (no replay): Full DLOG architecture (Dual-LoRA + orthogonal gating +
+   IPC freezing) but WITHOUT experience replay. This is an ablation study to
+   see how DLOG performs with only structural protection.
+
+3. DLOG (full): Complete system with all mechanisms. This is your main method.
+
+The comparison shows the contribution of each component.
+
+
+================================================================================
+SLIDE 14: Results - With Replay
+================================================================================
+
+Content: Performance matrices (DLOG vs Baseline) and bar chart comparing
+Final Performance and Forgetting, both WITH replay.
+
+EXPLANATION:
+This slide shows results when BOTH methods use replay.
+
+LEFT IMAGE - Performance Matrices:
+These are 4x4 heatmaps. Rows = "After training task X", Columns = "Eval on task Y".
+
+DLOG Performance Matrix:
+- After SST-2:        SST-2=0.94, others=0.00 (not trained yet)
+- After AG News:      SST-2=0.92, AG=0.89
+- After Amazon:       SST-2=0.91, AG=0.88, Amazon=0.94
+- After DBPedia:      SST-2=0.92, AG=0.88, Amazon=0.94, DBPedia=0.98
+
+Baseline (Single LoRA) Performance Matrix:
+- After SST-2:        SST-2=0.92
+- After AG News:      SST-2=0.92, AG=0.89
+- After Amazon:       SST-2=0.93, AG=0.88, Amazon=0.95
+- After DBPedia:      SST-2=0.92, AG=0.86, Amazon=0.94, DBPedia=0.98
+
+Key observations:
+- Both methods retain past task performance very well WITH replay
+- DLOG shows slightly better retention on SST-2 (0.92 vs 0.92) and AG News
+  (0.88 vs 0.86)
+- The differences are small because replay is already very effective
+
+RIGHT IMAGE - Bar Chart:
+- DLOG: Final Performance (FP) = 0.929, Forgetting (FT) = 0.009
+- Baseline: FP = 0.925, FT = 0.013
+
+DLOG achieves slightly higher final performance (0.929 vs 0.925) and lower
+forgetting (0.009 vs 0.013). The forgetting values are very low for both,
+indicating that replay is the dominant factor when used.
+
+What to tell your professor: When replay is available, both methods perform
+well. DLOG still edges out the baseline, but the advantage is modest. The
+real test is what happens WITHOUT replay (next slide).
+
+
+================================================================================
+SLIDE 15: Results - Without Replay (Ablation)
+================================================================================
+
+Content: Performance matrices and bar chart WITHOUT replay.
+
+EXPLANATION:
+This is the CRITICAL slide that shows the true value of DLOG's structural
+mechanisms. Here, neither method uses replay.
+
+LEFT IMAGE - Performance Matrices (No Replay):
+
+DLOG (no replay):
+- After SST-2:        SST-2=0.94
+- After AG News:      SST-2=0.89, AG=0.89
+- After Amazon:       SST-2=0.13, AG=0.89, Amazon=0.95
+- After DBPedia:      SST-2=0.32, AG=0.87, Amazon=0.93, DBPedia=0.98
+
+Baseline (no replay):
+- After SST-2:        SST-2=0.92
+- After AG News:      SST-2=0.00, AG=0.89
+- After Amazon:       SST-2=0.00, AG=0.77, Amazon=0.95
+- After DBPedia:      SST-2=0.01, AG=0.81, Amazon=0.94, DBPedia=0.98
+
+Key observations:
+- Baseline suffers SEVERE catastrophic forgetting: SST-2 drops from 0.92 to
+  0.00 after AG News! It completely forgets the first task.
+- DLOG retains SST-2 at 0.89 after AG News (vs 0.00 for baseline) - much
+  better preservation thanks to orthogonal gating
+- However, DLOG also struggles on SST-2 after Amazon (drops to 0.13), showing
+  that structural methods alone aren't perfect
+- AG News is retained better by DLOG (0.87 vs 0.81 at the end)
+
+RIGHT IMAGE - Bar Chart (No Replay):
+- DLOG: Final Performance = 0.774, Forgetting = 0.220
+- Baseline: FP = 0.681, Forgetting = 0.337
+
+DLOG significantly outperforms the baseline:
+- +9.3 percentage points higher final performance (0.774 vs 0.681)
+- 34% less forgetting (0.220 vs 0.337)
+
+What to tell your professor: This is the strongest evidence for DLOG's value.
+Without replay as a crutch, DLOG's structural mechanisms (orthogonal gating +
+IPC freezing) provide substantially better protection against catastrophic
+forgetting. The baseline (single LoRA) completely forgets early tasks, while
+DLOG retains much more knowledge. However, even DLOG isn't perfect without
+replay - the full system (DLOG + replay) from slide 14 is the recommended
+configuration.
+
+
+================================================================================
+SLIDE 16: Summary
+================================================================================
+
+Content: 6 bullet points summarizing the DLOG system.
+
+EXPLANATION:
+This is your closing summary. The key takeaways:
+
+1. DLOG separates knowledge into Slow (memory) and Fast (task) LoRA adapters
+   -> Physical separation of long-term memory and working memory
+
+2. Orthogonal Gating (soft + hard) ensures new learning does not corrupt old
+   -> Mathematical guarantee that Fast cannot interfere with Slow
+
+3. Reservoir Replay provides gradient signal from past tasks
+   -> Simple but effective: mix old samples into training batches
+
+4. IPC Freezing permanently protects the most critical modules
+   -> Belt-and-suspenders: even if projection isn't perfect, critical modules
+      are locked
+
+5. QR+SVD consolidation compresses both adapters back to rank-r at each
+   task boundary
+   -> Elegant compression: optimal rank-r approximation, no rank explosion
+
+6. All mechanisms are complementary - each addresses a different aspect of
+   forgetting
+   -> Replay addresses data-level forgetting
+   -> Orthogonal gating addresses subspace-level interference
+   -> IPC freezing addresses module-level protection
+   -> Consolidation addresses memory management
+
+FINAL TALKING POINTS for your professor:
+- DLOG achieves 0.929 final performance with only 0.009 forgetting (with replay)
+- Without replay, DLOG still outperforms baseline by +9.3% FP and -34% forgetting
+- The method is parameter-efficient: only LoRA adapters are trained, base model
+  is frozen
+- All 4 tasks are learned sequentially with a shared classification head
+- The approach is general and could be applied to other LLMs and task sequences

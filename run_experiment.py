@@ -216,7 +216,7 @@ def run_experiment(config: DLOGConfig, smoke_test: bool = False):
 
     max_steps = config.smoke_test_steps if smoke_test else config.num_train_steps_per_task
     max_train_samples = config.smoke_test_samples if smoke_test else None
-    max_eval_samples = 20 if smoke_test else 500
+    max_eval_samples = 20 if smoke_test else 2000
 
     print(f"\n{'#'*60}")
     print(f"  DLOG Experiment {'(SMOKE TEST)' if smoke_test else ''}")
@@ -397,7 +397,7 @@ def run_ablation(config: DLOGConfig, smoke_test: bool = False):
 
     max_steps = config.smoke_test_steps if smoke_test else config.num_train_steps_per_task
     max_train_samples = config.smoke_test_samples if smoke_test else None
-    max_eval_samples = 20 if smoke_test else 500
+    max_eval_samples = 20 if smoke_test else 2000
 
     tokenizer = AutoTokenizer.from_pretrained(config.model_name)
     if tokenizer.pad_token is None:
