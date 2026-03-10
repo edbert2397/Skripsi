@@ -1,0 +1,26 @@
+benchmark: "lnt"
+tasks:
+  - "ag_news"
+  - "amazon_reviews"
+  - "dbpedia"
+  - "yahoo_answers"
+  - "mnli"
+  - "qqp"
+  - "rte"
+  - "sst2"
+  - "wic"
+  - "cb"
+  - "copa"
+  - "boolq"
+  - "multirc"
+  - "imdb"
+  - "sst2_v2"
+
+n_tasks: 15
+train_samples_per_task: 1000
+test_samples_per_task: 500
+
+task_orders:
+  0: ["ag_news", "amazon_reviews", "dbpedia", "yahoo_answers", "mnli", "qqp", "rte", "sst2", "wic", "cb", "copa", "boolq", "multirc", "imdb", "sst2_v2"]
+  1: ["mnli", "dbpedia", "copa", "sst2", "ag_news", "boolq", "qqp", "yahoo_answers", "wic", "amazon_reviews", "rte", "cb", "imdb", "multirc", "sst2_v2"]
+  2: ["yahoo_answers", "wic", "imdb", "ag_news", "cb", "qqp", "amazon_reviews", "rte", "boolq", "mnli", "sst2", "multirc", "dbpedia", "copa", "sst2_v2"]

@@ -1,0 +1,18 @@
+benchmark: "standard_cl"
+tasks:
+  - "ag_news"
+  - "amazon_reviews"
+  - "dbpedia"
+  - "yahoo_answers"
+
+n_tasks: 4
+train_samples_per_task: 5000
+test_samples_per_task: 500
+
+buffer:
+  size: 400                      # 2% of 20,000 (4 tasks * 5,000) — overrides base.yaml
+
+task_orders:
+  0: ["ag_news", "amazon_reviews", "dbpedia", "yahoo_answers"]
+  1: ["dbpedia", "yahoo_answers", "ag_news", "amazon_reviews"]
+  2: ["amazon_reviews", "dbpedia", "yahoo_answers", "ag_news"]

@@ -1,0 +1,42 @@
+# Base hyperparameters - shared across all experiments
+# Adjusted for RTX 4050 6GB VRAM
+
+model:
+  name: "t5-large"               # 770M params
+  lora_rank: 8
+  lora_alpha: 32
+  lora_target_modules: ["q", "v"]
+  beta: 0.995                    # EMA decay
+
+training:
+  lr: 1.0e-3
+  batch_size_current: 8          # Micro-batch; effective = 8*8 = 64 (paper spec)
+  batch_size_replay: 8           # Micro-batch; 4 triggers/step * 8 = 32 total (paper spec)
+  grad_accum_steps: 8            # Effective batch = 64 (8*8)
+  epochs_per_task: 1
+  dropout: 0.1
+  replay_ratio: "1:2"            # 1 replay per 2 current samples
+  fp16: true                     # Mixed precision (critical for 6GB)
+  gradient_checkpointing: true   # Saves ~40% activation memory
+
+selection:
+  method: "orthogonal"           # orthogonal | surprise | reservoir | hybrid
+  subspace_rank_k: 10
+  n_estimation_batches: 10
+  grad_batch_size: 4            # Mini-batch size for per-sample grads
+
+buffer:
+  size: 300                      # Default buffer size (samples total)
+
+evaluation:
+  seeds: [42, 123, 456]
+  task_orders: [0, 1, 2]        # 3 predefined orders
+
+logging:
+  use_wandb: false
+  log_every_n_steps: 50
+
+# RTX 4050 6GB notes:
+# - fp16 + gradient_checkpointing brings T5-Large to ~4.5GB base
+# - Per-sample grad batch of 8 keeps peak at ~5.5GB
+# - Full SVD on LoRA gradients is cheap (d_lora ~ 0.1% of params)

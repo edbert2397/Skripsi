@@ -1,0 +1,4 @@
+{"step": 0, "train/loss": 46.15625}
+{"step": 0, "task_ag_news_acc": 0.0}
+{"step": 10, "train/loss": 9.136388778686523}
+{"step": 1, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.0}
