@@ -140,6 +140,26 @@ Examples:
     for r in all_runs:
         print(f"  {r}")
 
+    # ---- Auto-generate side-by-side comparison plots ----
+    outputs_dir  = Path("outputs")
+    plot_script  = Path(__file__).parent / "plot_results.py"
+    for bench in benchmarks:
+        bench_runs = [
+            outputs_dir / r
+            for r in all_runs
+            if f"_{bench}_" in r and (outputs_dir / r / "final_results.json").exists()
+        ]
+        if len(bench_runs) < 2:
+            continue
+        save_path = outputs_dir / f"comparison_side_by_side_{bench}.png"
+        cmd = (
+            [sys.executable, str(plot_script), "--compare-runs"]
+            + [str(p) for p in bench_runs]
+            + ["--save-path", str(save_path)]
+        )
+        print(f"\n[Plot] Generating side-by-side plot for benchmark={bench} ...")
+        subprocess.run(cmd)
+
 
 if __name__ == "__main__":
     main()

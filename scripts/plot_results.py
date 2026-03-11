@@ -325,6 +325,119 @@ def print_comparison_table(df: pd.DataFrame):
             )
 
 
+def plot_runs_side_by_side(run_dirs: list, save_path: Path = None):
+    """
+    Given a list of run directories (each with final_results.json + config.json),
+    plot FP / AP / Forgetting as a grouped bar chart side-by-side.
+
+    Args:
+        run_dirs: list of Path objects pointing to individual run directories.
+        save_path: where to save the PNG (default: first run_dir's parent /
+                   comparison_side_by_side.png).
+    """
+    import numpy as np
+
+    records = []
+    for run_dir in run_dirs:
+        run_dir = Path(run_dir)
+        final_path  = run_dir / "final_results.json"
+        config_path = run_dir / "config.json"
+
+        if not final_path.exists():
+            print(f"[plot_runs_side_by_side] Skipping {run_dir}: no final_results.json")
+            continue
+
+        with open(final_path) as f:
+            results = json.load(f)
+        cfg = {}
+        if config_path.exists():
+            with open(config_path) as f:
+                cfg = json.load(f)
+
+        summary = results.get("summary", {})
+        key = (cfg.get("selection", "?"), cfg.get("use_ema", True), cfg.get("use_orthogonal_lora", False))
+        label = _METHOD_LABELS.get(key, run_dir.name)
+
+        records.append({
+            "label":      label,
+            "run_name":   run_dir.name,
+            "FP":         summary.get("FP",        float("nan")),
+            "AP":         summary.get("AP",        float("nan")),
+            "Forgetting": summary.get("Forgetting", float("nan")),
+        })
+
+    if not records:
+        print("[plot_runs_side_by_side] No valid runs to plot.")
+        return
+
+    metrics = ["FP", "AP", "Forgetting"]
+    metric_labels = ["Final Performance (FP ↑)", "Average Performance (AP ↑)", "Forgetting (↓ better)"]
+    palette = ["steelblue", "darkorange", "seagreen", "tomato", "mediumpurple", "slategray"]
+
+    n_methods = len(records)
+    n_metrics = len(metrics)
+    x = np.arange(n_metrics)
+    bar_w = 0.7 / n_methods
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    for i, rec in enumerate(records):
+        color  = _METHOD_COLORS.get(rec["label"], palette[i % len(palette)])
+        offset = (i - n_methods / 2 + 0.5) * bar_w
+        values = [rec[m] for m in metrics]
+
+        bars = ax.bar(
+            x + offset, values, bar_w,
+            label=f"{rec['label']}\n({rec['run_name']})",
+            color=color, alpha=0.88,
+        )
+        for bar, val in zip(bars, values):
+            if val == val:   # skip NaN
+                va  = "bottom" if val >= 0 else "top"
+                adj = 0.008 if val >= 0 else -0.008
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    val + adj,
+                    f"{val:.4f}", ha="center", va=va, fontsize=8,
+                )
+
+    # Highlight winning bar per metric with a star
+    for mi, metric in enumerate(metrics):
+    # For Forgetting: highest (least negative) wins; for FP/AP: highest wins
+        best_val = max((r[metric] for r in records if r[metric] == r[metric]), default=None)
+        if best_val is None:
+            continue
+        for i, rec in enumerate(records):
+            if rec[metric] == best_val:
+                offset = (i - n_methods / 2 + 0.5) * bar_w
+                ax.text(
+                    x[mi] + offset,
+                    best_val + (0.025 if best_val >= 0 else -0.04),
+                    "★", ha="center", va="bottom", fontsize=12,
+                    color=_METHOD_COLORS.get(rec["label"], palette[i % len(palette)]),
+                )
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(metric_labels, fontsize=10)
+    ax.set_ylabel("Score", fontsize=11)
+    ax.set_title("Side-by-Side Method Comparison", fontsize=13)
+    ax.axhline(0, color="black", linewidth=0.8, linestyle="--")
+    ax.legend(fontsize=8, loc="upper right")
+    ax.grid(axis="y", alpha=0.3)
+
+    all_vals = [rec[m] for rec in records for m in metrics if rec[m] == rec[m]]
+    ax.set_ylim(bottom=min(0, min(all_vals) - 0.05), top=max(all_vals) + 0.12)
+
+    plt.tight_layout()
+
+    if save_path is None:
+        save_path = Path(run_dirs[0]).parent / "comparison_side_by_side.png"
+    save_path = Path(save_path)
+    plt.savefig(save_path, dpi=150)
+    print(f"[Saved] {save_path}")
+    plt.close()
+
+
 def plot_ablation_line(runs: dict, ablation_key: str, x_param: str, x_values: list,
                        method_label: str, save_dir: Path):
     """Plot an ablation curve (x_param vs FP/AP/Forgetting)."""
@@ -479,11 +592,19 @@ def main():
                    help="Plot a specific ablation: subspace_rank | buffer_size | replay_ratio | ema_beta | hybrid")
     p.add_argument("--comparison", action="store_true",
                    help="Plot comparison across methods (orthogonal vs surprise vs reservoir)")
+    p.add_argument("--compare-runs", nargs="+", type=Path, default=None, metavar="RUN_DIR",
+                   help="Plot specific run directories side by side (e.g. outputs/compare_orthogonal_lnt_ord0_s42 outputs/compare_surprise_lnt_ord0_s42)")
+    p.add_argument("--save-path", type=Path, default=None,
+                   help="Output path for --compare-runs plot (default: outputs/comparison_side_by_side.png)")
     p.add_argument("--benchmark", default="lnt", choices=["standard_cl", "lnt"])
     cfg = p.parse_args()
 
     if cfg.run is not None:
         plot_run(cfg.run)
+        return
+
+    if cfg.compare_runs is not None:
+        plot_runs_side_by_side(cfg.compare_runs, save_path=cfg.save_path)
         return
 
     results_dir = cfg.results_dir
