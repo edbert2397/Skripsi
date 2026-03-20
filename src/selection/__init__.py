@@ -1,4 +1,6 @@
 from .orthogonal import OrthogonalSelector
+from .feature import FeatureSelector
+from .conflict import ConflictSelector
 from .surprise import SurpriseSelector
 from .reservoir import ReservoirSelector
 from .hybrid import HybridSelector
@@ -15,6 +17,19 @@ def build_selector(cfg):
     if method == "orthogonal":
         return OrthogonalSelector(
             subspace_rank_k=k,
+            n_estimation_batches=n_est,
+            grad_batch_size=grad_bs,
+            use_fp16=use_fp16,
+        )
+    elif method == "feature":
+        return FeatureSelector(
+            subspace_rank_k=k,
+            n_estimation_batches=n_est,
+            score_batch_size=32,
+            use_fp16=use_fp16,
+        )
+    elif method == "conflict":
+        return ConflictSelector(
             n_estimation_batches=n_est,
             grad_batch_size=grad_bs,
             use_fp16=use_fp16,

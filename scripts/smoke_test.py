@@ -42,7 +42,7 @@ SMOKE_TASKS   = ["ag_news", "amazon_reviews"]  # first 2 of standard_cl order 0
 N_TRAIN       = 10
 N_TEST        = 5
 BUFFER_SIZE   = 5
-ALL_SELECTORS = ["reservoir", "surprise", "orthogonal", "hybrid"]
+ALL_SELECTORS = ["reservoir", "surprise", "orthogonal", "feature", "hybrid"]
 
 
 def make_cfg(selection: str, use_ema: bool, fp16: bool) -> SimpleNamespace:

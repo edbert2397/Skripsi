@@ -36,7 +36,10 @@ def estimate_gradient_subspace(
         V_k of shape [d_lora, k] on CPU — the top-k right singular vectors.
         (Projection is applied lazily as V_k @ (V_k.T @ g) to avoid [d_lora, d_lora] matrix.)
     """
-    model.eval()
+    # Must stay in training mode so gradient checkpointing works and
+    # use_cache stays False — eval mode breaks LoRA gradient flow in T5.
+    was_training = model.training
+    model.train()
     m = getattr(model, "fast_model", model)
 
     for name, param in m.named_parameters():
@@ -102,7 +105,8 @@ def estimate_gradient_subspace(
     V_k = (G.T @ U_k) / sigma_k.unsqueeze(0)    # [d_lora, k]
     V_k = V_k.contiguous()
 
-    model.train()
+    if not was_training:
+        model.eval()
     torch.cuda.empty_cache()
 
     return V_k   # CPU fp32, shape [d_lora, k]

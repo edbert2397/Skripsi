@@ -2,11 +2,13 @@
 """
 run_comparison.py - Run head-to-head comparison experiments across methods.
 
-Compares our method (orthogonal + EMA) against baselines across benchmarks,
-task orders, and seeds.
+Compares orthogonal methods (O-Grad, O-Feat, O-Conflict) against baselines
+across benchmarks, task orders, and seeds.
 
 Methods:
-  orthogonal  - Our method: orthogonal gradient subspace selection + EMA
+  orthogonal  - O-Grad: gradient subspace orthogonality + EMA (Method 1)
+  feature     - O-Feat: feature subspace orthogonality + EMA (Method 2)
+  conflict    - O-Conflict: gradient conflict score + EMA (Method 3)
   surprise    - SuRe baseline: surprise-based selection + EMA
   reservoir   - Random baseline: reservoir sampling (no selection bias)
 
@@ -14,8 +16,8 @@ Usage examples:
   # All methods, all benchmarks (full comparison):
   python scripts/run_comparison.py
 
-  # Only compare orthogonal vs surprise (SuRe):
-  python scripts/run_comparison.py --methods orthogonal surprise
+  # Only compare orthogonal vs feature (O-Grad vs O-Feat):
+  python scripts/run_comparison.py --methods orthogonal feature
 
   # Only on standard_cl benchmark, one seed:
   python scripts/run_comparison.py --benchmarks standard_cl --seeds 42
@@ -37,6 +39,8 @@ SCRIPT = Path(__file__).parent / "run_experiment.py"
 # Each entry: method_name -> extra CLI args passed to run_experiment.py
 METHODS = {
     "orthogonal": ["--selection", "orthogonal"],
+    "feature":    ["--selection", "feature"],
+    "conflict":   ["--selection", "conflict"],
     "surprise":   ["--selection", "surprise"],
     "reservoir":  ["--selection", "reservoir", "--no-ema"],
 }
@@ -71,13 +75,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Methods:
-  orthogonal  Our method: orthogonal gradient subspace selection + EMA
+  orthogonal  O-Grad: gradient subspace orthogonality + EMA (Method 1)
+  feature     O-Feat: feature subspace orthogonality + EMA (Method 2)
+  conflict    O-Conflict: gradient conflict score + EMA (Method 3)
   surprise    SuRe baseline: surprise-based selection + EMA
   reservoir   Random baseline: reservoir sampling, no EMA
 
 Examples:
   python scripts/run_comparison.py
-  python scripts/run_comparison.py --methods orthogonal surprise
+  python scripts/run_comparison.py --methods orthogonal feature
   python scripts/run_comparison.py --benchmarks lnt --seeds 42 123
   python scripts/run_comparison.py --fast
         """,
@@ -151,7 +157,9 @@ Examples:
         ]
         if len(bench_runs) < 2:
             continue
-        save_path = outputs_dir / f"comparison_side_by_side_{bench}.png"
+        # Build descriptive filename from method names so plots don't overwrite
+        methods_tag = "_".join(sorted(methods))
+        save_path = outputs_dir / f"comparison_{methods_tag}_{bench}.png"
         cmd = (
             [sys.executable, str(plot_script), "--compare-runs"]
             + [str(p) for p in bench_runs]

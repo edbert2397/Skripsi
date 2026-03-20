@@ -70,6 +70,7 @@ BENCHMARK_CONFIGS = {
 # Mirror run_comparison.py's EMA settings per method
 COMPARISON_METHODS = {
     "orthogonal": {"selection": "orthogonal", "use_ema": True},
+    "feature":    {"selection": "feature",    "use_ema": True},
     "surprise":   {"selection": "surprise",   "use_ema": True},
     "reservoir":  {"selection": "reservoir",  "use_ema": False},
 }

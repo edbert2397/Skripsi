@@ -68,7 +68,10 @@ def compute_per_sample_gradients(
     Returns:
         List of CPU float32 tensors, one per sample, each shape [d_lora].
     """
-    model.eval()
+    # Must stay in training mode so gradient checkpointing works and
+    # use_cache stays False — eval mode breaks LoRA gradient flow in T5.
+    was_training = model.training
+    model.train()
     grad_vectors = []
 
     # Ensure fast LoRA params have grad enabled
@@ -76,8 +79,6 @@ def compute_per_sample_gradients(
     for name, param in m.named_parameters():
         if "lora_" in name:
             param.requires_grad_(True)
-
-    ctx = torch.autocast(device_type="cuda", dtype=torch.float16) if use_fp16 else torch.no_grad.__class__()
 
     for i, sample in enumerate(samples):
         batch = {k: v.unsqueeze(0).to(device) if isinstance(v, torch.Tensor) else v
@@ -100,7 +101,8 @@ def compute_per_sample_gradients(
         if (i + 1) % micro_batch_size == 0:
             torch.cuda.empty_cache()
 
-    model.train()
+    if not was_training:
+        model.eval()
     m.zero_grad()
     torch.cuda.empty_cache()
     return grad_vectors

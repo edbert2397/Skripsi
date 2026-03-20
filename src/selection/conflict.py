@@ -1,8 +1,18 @@
 """
-orthogonal.py - Orthogonal gradient selection (our core contribution).
+conflict.py - O-Conflict: Gradient conflict score selection (Method 3).
 
-Samples are scored by how orthogonal their gradient is to the current
-task's gradient subspace: score(z) = ||g(z)_⊥||.
+Samples are scored by how much their gradient direction conflicts with
+the current task's mean gradient:
+
+    score(z) = -cos(g(z), g_ref)
+
+Key differences from O-Grad:
+  - No SVD/subspace estimation needed (only a mean gradient vector)
+  - Measures directional conflict, not subspace residual magnitude
+  - Same backward-pass cost per sample, but cheaper preparation phase
+
+Inspired by A-GEM, GSS, and CNL's finding that negative gradient similarity
+is the causal mechanism of catastrophic forgetting.
 """
 
 import torch
@@ -10,36 +20,35 @@ from typing import List, Optional
 from tqdm import tqdm
 
 from .base import BaseSelector
-from ..utils.subspace import estimate_gradient_subspace, orthogonal_residual_norm
+from ..utils.conflict_score import estimate_reference_gradient, gradient_conflict_score
 from ..utils.gradient_utils import extract_lora_grad_vector
 
 
-class OrthogonalSelector(BaseSelector):
+class ConflictSelector(BaseSelector):
     def __init__(
         self,
-        subspace_rank_k: int = 10,
         n_estimation_batches: int = 10,
         grad_batch_size: int = 8,
         use_fp16: bool = True,
     ):
-        self.k = subspace_rank_k
         self.n_estimation_batches = n_estimation_batches
         self.grad_batch_size = grad_batch_size
         self.use_fp16 = use_fp16
-        self.projection_matrix: Optional[torch.Tensor] = None  # V_k: [d_lora, k] CPU fp32
+        self.g_ref: Optional[torch.Tensor] = None  # [d_lora] CPU fp32
 
     def prepare_for_task(self, model, dataloader, device: torch.device):
-        """Phase 1: estimate gradient subspace from current task batches."""
-        print(f"[OrthogonalSelector] Estimating gradient subspace (k={self.k})...")
-        self.projection_matrix = estimate_gradient_subspace(
+        """Phase 1C: compute mean gradient of current task (no SVD needed)."""
+        print(f"[ConflictSelector] Computing reference gradient "
+              f"(avg over {self.n_estimation_batches} batches)...")
+        self.g_ref = estimate_reference_gradient(
             model=model,
             dataloader=dataloader,
             device=device,
-            subspace_rank_k=self.k,
             n_estimation_batches=self.n_estimation_batches,
             use_fp16=self.use_fp16,
         )
-        print(f"[OrthogonalSelector] Subspace estimated. V_k shape: {self.projection_matrix.shape}")
+        print(f"[ConflictSelector] Reference gradient computed. "
+              f"Shape: {self.g_ref.shape}, norm: {self.g_ref.norm().item():.4f}")
 
     def score_samples(
         self,
@@ -47,25 +56,26 @@ class OrthogonalSelector(BaseSelector):
         candidates: List[dict],
         device: torch.device,
     ) -> List[float]:
-        """Phase 2: score each candidate by ||g(z)_⊥||.
+        """Phase 2C: score each candidate by -cos(g(z), g_ref).
 
-        Gradients are computed and scored one at a time to avoid accumulating
-        1000 x d_lora tensors in CPU RAM (would be ~9 GB for T5-Large LoRA).
+        Like O-Grad, requires a backward pass per sample to get g(z).
+        Unlike O-Grad, the scoring itself is a simple dot product (no SVD).
         """
-        if self.projection_matrix is None:
+        if self.g_ref is None:
             raise RuntimeError("Call prepare_for_task() before score_samples().")
 
-        print(f"[OrthogonalSelector] Scoring {len(candidates)} candidates...")
-        # Must stay in training mode for gradient checkpointing compatibility.
+        print(f"[ConflictSelector] Scoring {len(candidates)} candidates...")
+        # Must stay in training mode for gradient checkpointing to work.
+        # In eval mode, T5 enables use_cache=True which breaks gradient flow.
         was_training = model.training
         model.train()
         m = getattr(model, "fast_model", model)
-        for _, param in m.named_parameters():
-            if "lora_" in _:
+        for name, param in m.named_parameters():
+            if "lora_" in name:
                 param.requires_grad_(True)
 
         scores = []
-        for i, sample in enumerate(tqdm(candidates, desc="Scoring candidates", leave=False)):
+        for i, sample in enumerate(tqdm(candidates, desc="Scoring candidates (conflict)", leave=False)):
             batch = {k: v.unsqueeze(0).to(device) if isinstance(v, torch.Tensor) else v
                      for k, v in sample.items()}
             m.zero_grad()
@@ -78,7 +88,7 @@ class OrthogonalSelector(BaseSelector):
 
             grad_vec = extract_lora_grad_vector(model)  # CPU fp32, [d_lora]
             grad_vec = torch.nan_to_num(grad_vec, nan=0.0, posinf=0.0, neginf=0.0)
-            scores.append(orthogonal_residual_norm(grad_vec, self.projection_matrix))
+            scores.append(gradient_conflict_score(grad_vec, self.g_ref))
             del grad_vec
 
             if (i + 1) % self.grad_batch_size == 0:

@@ -115,11 +115,9 @@ class ContinualTrainer:
         cfg = self.config
         optimizer = self._build_optimizer()
 
-        # ---- Phase 1: Estimate gradient subspace ----
-        self.selector.prepare_for_task(self.model, dataloader, self.device)
-
         # ---- Orthogonal-Before variant ----
         if self.update_buffer_before:
+            self.selector.prepare_for_task(self.model, dataloader, self.device)
             self._update_buffer(task_id, candidate_dataset)
 
         # ---- Phase 3: Train with replay ----
@@ -180,6 +178,7 @@ class ContinualTrainer:
 
         # ---- Phase 2: Update buffer (Orthogonal-After, default) ----
         if not self.update_buffer_before:
+            self.selector.prepare_for_task(self.model, dataloader, self.device)
             self._update_buffer(task_id, candidate_dataset)
 
         avg_loss = total_loss / max(1, n_steps)

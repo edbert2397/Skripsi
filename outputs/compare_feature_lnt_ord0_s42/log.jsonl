@@ -1,0 +1,30 @@
+{"step": 0, "train/loss": 128.4618091583252}
+{"step": 0, "task_ag_news_acc": 0.0}
+{"step": 15, "train/loss": 38.88880777359009}
+{"step": 1, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.0}
+{"step": 30, "train/loss": 63.94301795959473}
+{"step": 2, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.0, "task_dbpedia_acc": 0.0}
+{"step": 45, "train/loss": 39.77840876579285}
+{"step": 3, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.0, "task_dbpedia_acc": 0.0, "task_yahoo_answers_acc": 0.0}
+{"step": 60, "train/loss": 30.12057113647461}
+{"step": 4, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.004, "task_dbpedia_acc": 0.0, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.822}
+{"step": 75, "train/loss": 47.066423177719116}
+{"step": 5, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.028, "task_dbpedia_acc": 0.0, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.832, "task_qqp_acc": 0.32}
+{"step": 90, "train/loss": 14.090746879577637}
+{"step": 6, "task_ag_news_acc": 0.016, "task_amazon_reviews_acc": 0.192, "task_dbpedia_acc": 0.0, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.84, "task_qqp_acc": 0.322, "task_rte_acc": 0.0}
+{"step": 105, "train/loss": 2.05698125064373}
+{"step": 7, "task_ag_news_acc": 0.114, "task_amazon_reviews_acc": 0.686, "task_dbpedia_acc": 0.004, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.858, "task_qqp_acc": 0.322, "task_rte_acc": 0.007220216606498195, "task_sst2_acc": 0.752}
+{"step": 120, "train/loss": 36.30858755111694}
+{"step": 8, "task_ag_news_acc": 0.28, "task_amazon_reviews_acc": 0.904, "task_dbpedia_acc": 0.038, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.862, "task_qqp_acc": 0.324, "task_rte_acc": 0.05776173285198556, "task_sst2_acc": 0.898, "task_wic_acc": 0.646}
+{"step": 135, "train/loss": 3.7377836257219315}
+{"step": 9, "task_ag_news_acc": 0.352, "task_amazon_reviews_acc": 0.912, "task_dbpedia_acc": 0.058, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.864, "task_qqp_acc": 0.324, "task_rte_acc": 0.09025270758122744, "task_sst2_acc": 0.908, "task_wic_acc": 0.64, "task_cb_acc": 0.875}
+{"step": 139, "train/loss": 20.605027079582214}
+{"step": 10, "task_ag_news_acc": 0.422, "task_amazon_reviews_acc": 0.916, "task_dbpedia_acc": 0.08, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.864, "task_qqp_acc": 0.324, "task_rte_acc": 0.1588447653429603, "task_sst2_acc": 0.916, "task_wic_acc": 0.636, "task_cb_acc": 0.875, "task_copa_acc": 0.56}
+{"step": 145, "train/loss": 6.718747109174728}
+{"step": 11, "task_ag_news_acc": 0.552, "task_amazon_reviews_acc": 0.924, "task_dbpedia_acc": 0.164, "task_yahoo_answers_acc": 0.002, "task_mnli_acc": 0.868, "task_qqp_acc": 0.322, "task_rte_acc": 0.36823104693140796, "task_sst2_acc": 0.924, "task_wic_acc": 0.636, "task_cb_acc": 0.8928571428571429, "task_copa_acc": 0.56, "task_boolq_acc": 0.686}
+{"step": 160, "train/loss": 4.630600452423096}
+{"step": 12, "task_ag_news_acc": 0.624, "task_amazon_reviews_acc": 0.922, "task_dbpedia_acc": 0.218, "task_yahoo_answers_acc": 0.01, "task_mnli_acc": 0.872, "task_qqp_acc": 0.322, "task_rte_acc": 0.49097472924187724, "task_sst2_acc": 0.928, "task_wic_acc": 0.638, "task_cb_acc": 0.8928571428571429, "task_copa_acc": 0.55, "task_boolq_acc": 0.688, "task_multirc_acc": 0.648}
+{"step": 175, "train/loss": 2.347287379205227}
+{"step": 13, "task_ag_news_acc": 0.66, "task_amazon_reviews_acc": 0.922, "task_dbpedia_acc": 0.264, "task_yahoo_answers_acc": 0.032, "task_mnli_acc": 0.874, "task_qqp_acc": 0.322, "task_rte_acc": 0.5054151624548736, "task_sst2_acc": 0.93, "task_wic_acc": 0.644, "task_cb_acc": 0.8928571428571429, "task_copa_acc": 0.58, "task_boolq_acc": 0.682, "task_multirc_acc": 0.646, "task_imdb_acc": 0.834}
+{"step": 190, "train/loss": 2.440542235970497}
+{"step": 14, "task_ag_news_acc": 0.688, "task_amazon_reviews_acc": 0.92, "task_dbpedia_acc": 0.304, "task_yahoo_answers_acc": 0.076, "task_mnli_acc": 0.872, "task_qqp_acc": 0.322, "task_rte_acc": 0.5018050541516246, "task_sst2_acc": 0.93, "task_wic_acc": 0.64, "task_cb_acc": 0.8928571428571429, "task_copa_acc": 0.57, "task_boolq_acc": 0.688, "task_multirc_acc": 0.644, "task_imdb_acc": 0.83, "task_sst2_v2_acc": 0.896}

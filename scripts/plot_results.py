@@ -62,11 +62,17 @@ def aggregate_by_method(runs: dict):
             m = _mean(lst)
             return (sum((x - m) ** 2 for x in lst) / max(len(lst) - 1, 1)) ** 0.5
 
-        method_name = sel
+        # Use clear O-Grad / O-Feat labels
+        _GENERIC_LABELS = {
+            "orthogonal": "O-Grad",
+            "feature":    "O-Feat",
+            "surprise":   "Surprise",
+            "reservoir":  "Reservoir",
+            "hybrid":     "Hybrid",
+        }
+        method_name = _GENERIC_LABELS.get(sel, sel.capitalize())
         if ema:
-            method_name = "Slow " + method_name.capitalize()
-        else:
-            method_name = method_name.capitalize()
+            method_name = "Slow " + method_name
         if olora:
             method_name += " + O-LoRA"
 
@@ -108,21 +114,24 @@ def filter_comparison_runs(runs: dict) -> dict:
 
 # ---- Canonical display names for comparison methods ----
 _METHOD_LABELS = {
-    ("orthogonal", True,  False): "Ours (Orthogonal + EMA)",
+    ("orthogonal", True,  False): "O-Grad (Gradient Orth. + EMA)",
+    ("feature",    True,  False): "O-Feat (Feature Orth. + EMA)",
     ("surprise",   True,  False): "SuRe (Surprise + EMA)",
     ("reservoir",  False, False): "Reservoir (Random)",
 }
 
 _METHOD_ORDER = [
-    "Ours (Orthogonal + EMA)",
+    "O-Grad (Gradient Orth. + EMA)",
+    "O-Feat (Feature Orth. + EMA)",
     "SuRe (Surprise + EMA)",
     "Reservoir (Random)",
 ]
 
 _METHOD_COLORS = {
-    "Ours (Orthogonal + EMA)": "steelblue",
-    "SuRe (Surprise + EMA)":   "darkorange",
-    "Reservoir (Random)":      "slategray",
+    "O-Grad (Gradient Orth. + EMA)": "steelblue",
+    "O-Feat (Feature Orth. + EMA)":  "seagreen",
+    "SuRe (Surprise + EMA)":         "darkorange",
+    "Reservoir (Random)":             "slategray",
 }
 
 
@@ -431,7 +440,18 @@ def plot_runs_side_by_side(run_dirs: list, save_path: Path = None):
     plt.tight_layout()
 
     if save_path is None:
-        save_path = Path(run_dirs[0]).parent / "comparison_side_by_side.png"
+        # Build filename from method names in run dirs (e.g., comparison_orthogonal_surprise.png)
+        method_names = []
+        for rec in records:
+            # Extract method from run_name pattern: compare_{method}_{bench}_...
+            parts = rec["run_name"].split("_")
+            if len(parts) >= 2 and parts[0] == "compare":
+                method_names.append(parts[1])
+            else:
+                method_names.append(rec["run_name"])
+        unique_methods = sorted(set(method_names))
+        methods_tag = "_".join(unique_methods) if unique_methods else "side_by_side"
+        save_path = Path(run_dirs[0]).parent / f"comparison_{methods_tag}.png"
     save_path = Path(save_path)
     plt.savefig(save_path, dpi=150)
     print(f"[Saved] {save_path}")

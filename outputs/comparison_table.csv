@@ -1,0 +1,3 @@
+Method,Benchmark,FP_mean,FP_std,AP_mean,AP_std,F_mean,F_std,n_runs
+O-Grad (Gradient Orth. + EMA),lnt,0.6537185490802819,0.0,0.4632615308578305,0.0,-0.19045701822245142,0.0,1
+SuRe (Surprise + EMA),lnt,0.6384306687295858,0.0,0.44662200017191,0.0,-0.19180866855767575,0.0,1
