@@ -221,8 +221,8 @@ def main():
         print(f"  {m:12s}  selection={s['selection']:12s}  EMA={s['use_ema']}")
 
     print("\n[Run] Loading T5-Large (once)...")
-    base_t5   = T5ForConditionalGeneration.from_pretrained("t5-large")
-    tokenizer = T5Tokenizer.from_pretrained("t5-large", legacy=False)
+    base_t5   = T5ForConditionalGeneration.from_pretrained("t5-large", local_files_only=True)
+    tokenizer = T5Tokenizer.from_pretrained("t5-large", legacy=False, local_files_only=True)
 
     results = {}
     for method in methods:

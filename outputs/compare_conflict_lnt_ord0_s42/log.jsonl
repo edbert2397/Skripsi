@@ -26,3 +26,39 @@
 {"step": 0, "train/loss": 129.89440250396729}
 {"step": 0, "train/loss": 129.89440250396729}
 {"step": 0, "train/loss": 129.89440250396729}
+{"step": 0, "task_ag_news_acc": 0.0}
+{"step": 15, "train/loss": 41.25850057601929}
+{"step": 1, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.0}
+{"step": 0, "train/loss": 129.89440250396729}
+{"step": 0, "task_ag_news_acc": 0.0}
+{"step": 15, "train/loss": 41.25850057601929}
+{"step": 0, "train/loss": 129.89440250396729}
+{"step": 0, "task_ag_news_acc": 0.0}
+{"step": 15, "train/loss": 38.24841356277466}
+{"step": 1, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.0}
+{"step": 30, "train/loss": 50.567967891693115}
+{"step": 2, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.0, "task_dbpedia_acc": 0.0}
+{"step": 45, "train/loss": 42.267308950424194}
+{"step": 3, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.0, "task_dbpedia_acc": 0.0, "task_yahoo_answers_acc": 0.0}
+{"step": 60, "train/loss": 30.216705083847046}
+{"step": 4, "task_ag_news_acc": 0.0, "task_amazon_reviews_acc": 0.012, "task_dbpedia_acc": 0.0, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.812}
+{"step": 75, "train/loss": 39.06463003158569}
+{"step": 5, "task_ag_news_acc": 0.002, "task_amazon_reviews_acc": 0.278, "task_dbpedia_acc": 0.004, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.824, "task_qqp_acc": 0.322}
+{"step": 90, "train/loss": 14.9454026222229}
+{"step": 6, "task_ag_news_acc": 0.018, "task_amazon_reviews_acc": 0.614, "task_dbpedia_acc": 0.068, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.834, "task_qqp_acc": 0.322, "task_rte_acc": 0.0}
+{"step": 105, "train/loss": 5.608732670545578}
+{"step": 7, "task_ag_news_acc": 0.09, "task_amazon_reviews_acc": 0.782, "task_dbpedia_acc": 0.138, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.856, "task_qqp_acc": 0.32, "task_rte_acc": 0.0036101083032490976, "task_sst2_acc": 0.74}
+{"step": 120, "train/loss": 33.57411253452301}
+{"step": 8, "task_ag_news_acc": 0.27, "task_amazon_reviews_acc": 0.882, "task_dbpedia_acc": 0.242, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.864, "task_qqp_acc": 0.314, "task_rte_acc": 0.02888086642599278, "task_sst2_acc": 0.862, "task_wic_acc": 0.626}
+{"step": 135, "train/loss": 4.7238500118255615}
+{"step": 9, "task_ag_news_acc": 0.318, "task_amazon_reviews_acc": 0.898, "task_dbpedia_acc": 0.262, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.864, "task_qqp_acc": 0.312, "task_rte_acc": 0.05776173285198556, "task_sst2_acc": 0.88, "task_wic_acc": 0.626, "task_cb_acc": 0.875}
+{"step": 139, "train/loss": 23.06692087650299}
+{"step": 10, "task_ag_news_acc": 0.38, "task_amazon_reviews_acc": 0.906, "task_dbpedia_acc": 0.282, "task_yahoo_answers_acc": 0.0, "task_mnli_acc": 0.864, "task_qqp_acc": 0.312, "task_rte_acc": 0.12274368231046931, "task_sst2_acc": 0.892, "task_wic_acc": 0.618, "task_cb_acc": 0.875, "task_copa_acc": 0.54}
+{"step": 145, "train/loss": 9.554645299911499}
+{"step": 11, "task_ag_news_acc": 0.594, "task_amazon_reviews_acc": 0.914, "task_dbpedia_acc": 0.366, "task_yahoo_answers_acc": 0.006, "task_mnli_acc": 0.872, "task_qqp_acc": 0.304, "task_rte_acc": 0.26353790613718414, "task_sst2_acc": 0.91, "task_wic_acc": 0.614, "task_cb_acc": 0.8928571428571429, "task_copa_acc": 0.53, "task_boolq_acc": 0.694}
+{"step": 160, "train/loss": 5.892626374959946}
+{"step": 12, "task_ag_news_acc": 0.692, "task_amazon_reviews_acc": 0.916, "task_dbpedia_acc": 0.428, "task_yahoo_answers_acc": 0.02, "task_mnli_acc": 0.87, "task_qqp_acc": 0.304, "task_rte_acc": 0.4007220216606498, "task_sst2_acc": 0.922, "task_wic_acc": 0.604, "task_cb_acc": 0.8928571428571429, "task_copa_acc": 0.55, "task_boolq_acc": 0.69, "task_multirc_acc": 0.64}
+{"step": 175, "train/loss": 2.4727119505405426}
+{"step": 13, "task_ag_news_acc": 0.744, "task_amazon_reviews_acc": 0.916, "task_dbpedia_acc": 0.45, "task_yahoo_answers_acc": 0.05, "task_mnli_acc": 0.858, "task_qqp_acc": 0.29, "task_rte_acc": 0.4657039711191336, "task_sst2_acc": 0.924, "task_wic_acc": 0.614, "task_cb_acc": 0.8928571428571429, "task_copa_acc": 0.58, "task_boolq_acc": 0.696, "task_multirc_acc": 0.634, "task_imdb_acc": 0.852}
+{"step": 190, "train/loss": 3.1688822507858276}
+{"step": 14, "task_ag_news_acc": 0.772, "task_amazon_reviews_acc": 0.92, "task_dbpedia_acc": 0.472, "task_yahoo_answers_acc": 0.098, "task_mnli_acc": 0.838, "task_qqp_acc": 0.28, "task_rte_acc": 0.4657039711191336, "task_sst2_acc": 0.928, "task_wic_acc": 0.628, "task_cb_acc": 0.9107142857142857, "task_copa_acc": 0.59, "task_boolq_acc": 0.7, "task_multirc_acc": 0.642, "task_imdb_acc": 0.858, "task_sst2_v2_acc": 0.524}

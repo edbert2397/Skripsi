@@ -153,8 +153,8 @@ def main():
 
     # ---- Load model ----
     print("[Model] Loading T5-Large...")
-    base_model = T5ForConditionalGeneration.from_pretrained("t5-large")
-    tokenizer = T5Tokenizer.from_pretrained("t5-large", legacy=False)
+    base_model = T5ForConditionalGeneration.from_pretrained("t5-large", local_files_only=True)
+    tokenizer = T5Tokenizer.from_pretrained("t5-large", legacy=False, local_files_only=True)
 
     ModelClass = OrthogonalLoRAModel if cfg.use_orthogonal_lora else DualLoRAModel
     model = ModelClass(

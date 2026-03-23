@@ -2,6 +2,7 @@
 
 import torch
 from typing import Dict, List
+from transformers import AutoTokenizer
 
 
 class Evaluator:
@@ -11,6 +12,7 @@ class Evaluator:
         self.amp_dtype = torch.bfloat16 if (self.use_fp16 and torch.cuda.is_available() and torch.cuda.is_bf16_supported()) else torch.float16
         # all_results[task_id_trained][task_id_eval] = accuracy
         self.all_results: Dict[int, Dict[int, float]] = {}
+        self.tokenizer = AutoTokenizer.from_pretrained("t5-large", legacy=False, local_files_only=True)
 
     @torch.no_grad()
     def evaluate_task(self, model, task_id: int, dataloader) -> float:
@@ -22,9 +24,7 @@ class Evaluator:
         """
         model.eval()
         correct = total = 0
-
-        from transformers import AutoTokenizer
-        tokenizer = AutoTokenizer.from_pretrained("t5-large", legacy=False)
+        tokenizer = self.tokenizer
 
         for batch in dataloader:
             input_ids = batch["input_ids"].to(self.device)

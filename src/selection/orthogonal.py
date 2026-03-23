@@ -64,17 +64,29 @@ class OrthogonalSelector(BaseSelector):
             if "lora_" in _:
                 param.requires_grad_(True)
 
+        amp_dtype = (torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported())
+                     else torch.float16)
+        use_scaler = self.use_fp16 and (amp_dtype == torch.float16)
+        scaler = torch.amp.GradScaler("cuda") if use_scaler else None
         scores = []
         for i, sample in enumerate(tqdm(candidates, desc="Scoring candidates", leave=False)):
             batch = {k: v.unsqueeze(0).to(device) if isinstance(v, torch.Tensor) else v
                      for k, v in sample.items()}
             m.zero_grad()
             if self.use_fp16:
-                with torch.autocast(device_type="cuda", dtype=torch.float16):
+                with torch.autocast(device_type="cuda", dtype=amp_dtype):
                     loss = model.compute_loss(batch)
+                if scaler is not None:
+                    scaler.scale(loss).backward()
+                    inv_scale = 1.0 / scaler.get_scale()
+                    for name, param in m.named_parameters():
+                        if "lora_" in name and param.grad is not None:
+                            param.grad.data.mul_(inv_scale)
+                else:
+                    loss.backward()
             else:
                 loss = model.compute_loss(batch)
-            loss.backward()
+                loss.backward()
 
             grad_vec = extract_lora_grad_vector(model)  # CPU fp32, [d_lora]
             grad_vec = torch.nan_to_num(grad_vec, nan=0.0, posinf=0.0, neginf=0.0)

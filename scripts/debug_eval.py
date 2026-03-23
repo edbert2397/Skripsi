@@ -10,8 +10,8 @@ from src.models.dual_lora import DualLoRAModel
 from src.data.datasets import load_task
 
 device = torch.device("cuda")
-base = T5ForConditionalGeneration.from_pretrained("t5-large")
-tokenizer = T5Tokenizer.from_pretrained("t5-large", legacy=False)
+base = T5ForConditionalGeneration.from_pretrained("t5-large", local_files_only=True)
+tokenizer = T5Tokenizer.from_pretrained("t5-large", legacy=False, local_files_only=True)
 model = DualLoRAModel(base, lora_rank=8, lora_alpha=32, beta=0.98).to(device)
 
 train_samples, train_loader, test_loader = load_task(
