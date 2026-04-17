@@ -2,24 +2,18 @@
 
 from typing import List
 
-STANDARD_CL_ORDERS = {
-    0: ["ag_news", "amazon_reviews", "dbpedia", "yahoo_answers"],
-    1: ["dbpedia", "yahoo_answers", "ag_news", "amazon_reviews"],
-    2: ["amazon_reviews", "dbpedia", "yahoo_answers", "ag_news"],
-}
-
-LNT_ORDERS = {
-    0: ["ag_news", "amazon_reviews", "dbpedia", "yahoo_answers", "mnli", "qqp",
-        "rte", "sst2", "wic", "cb", "copa", "boolq", "multirc", "imdb", "sst2_v2"],
-    1: ["mnli", "dbpedia", "copa", "sst2", "ag_news", "boolq", "qqp",
-        "yahoo_answers", "wic", "amazon_reviews", "rte", "cb", "imdb", "multirc", "sst2_v2"],
-    2: ["yahoo_answers", "wic", "imdb", "ag_news", "cb", "qqp", "amazon_reviews",
-        "rte", "boolq", "mnli", "sst2", "multirc", "dbpedia", "copa", "sst2_v2"],
+# RQ1 benchmark: 15-task sequence matching the thesis evaluation protocol.
+# Each task: 2,000 balanced train / 1,000 balanced test, seed=42.
+RQ1_ORDERS = {
+    0: [
+        "sst2", "ag_news", "mnli", "trec", "imdb",
+        "dbpedia", "snli", "cola", "yelp", "yahoo_answers",
+        "qnli", "mrpc", "amazon_reviews", "20news", "rte",
+    ],
 }
 
 BENCHMARK_ORDERS = {
-    "standard_cl": STANDARD_CL_ORDERS,
-    "lnt": LNT_ORDERS,
+    "rq1": RQ1_ORDERS,
 }
 
 

@@ -5,6 +5,7 @@ All tasks are framed as seq2seq: input is "task: text", output is label string.
 This matches the SuRe paper's T5-Large setup.
 """
 
+import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import T5Tokenizer
@@ -15,21 +16,21 @@ from typing import List, Tuple, Dict, Optional
 # ---- Task definitions ----
 TASK_CONFIG = {
     "ag_news": {
-        "hf_name": "ag_news",
+        "hf_name": "fancyzhx/ag_news",
         "text_key": "text",
         "label_key": "label",
         "labels": ["World", "Sports", "Business", "Sci/Tech"],
         "prefix": "classify news: ",
     },
     "amazon_reviews": {
-        "hf_name": "amazon_polarity",
+        "hf_name": "fancyzhx/amazon_polarity",
         "text_key": "content",
         "label_key": "label",
         "labels": ["negative", "positive"],
         "prefix": "classify sentiment: ",
     },
     "dbpedia": {
-        "hf_name": "dbpedia_14",
+        "hf_name": "fancyzhx/dbpedia_14",
         "text_key": "content",
         "label_key": "label",
         "labels": [
@@ -40,7 +41,7 @@ TASK_CONFIG = {
         "prefix": "classify topic: ",
     },
     "yahoo_answers": {
-        "hf_name": "yahoo_answers_topics",
+        "hf_name": "community-datasets/yahoo_answers_topics",
         "text_key": "question_title",
         "label_key": "topic",
         "labels": [
@@ -52,14 +53,14 @@ TASK_CONFIG = {
         "prefix": "classify question: ",
     },
     "sst2": {
-        "hf_name": ("glue", "sst2"),
+        "hf_name": ("nyu-mll/glue", "sst2"),
         "text_key": "sentence",
         "label_key": "label",
         "labels": ["negative", "positive"],
         "prefix": "classify sentiment: ",
     },
     "mnli": {
-        "hf_name": ("glue", "mnli"),
+        "hf_name": ("nyu-mll/glue", "mnli"),
         "text_key": None,   # special handling
         "label_key": "label",
         "labels": ["entailment", "neutral", "contradiction"],
@@ -67,69 +68,153 @@ TASK_CONFIG = {
         "test_split": "validation_matched",
     },
     "qqp": {
-        "hf_name": ("glue", "qqp"),
+        "hf_name": ("nyu-mll/glue", "qqp"),
         "text_key": None,
         "label_key": "label",
         "labels": ["not duplicate", "duplicate"],
         "prefix": "classify paraphrase: ",
     },
     "rte": {
-        "hf_name": ("glue", "rte"),
+        "hf_name": ("nyu-mll/glue", "rte"),
         "text_key": None,
         "label_key": "label",
         "labels": ["entailment", "not entailment"],
         "prefix": "classify rte: ",
     },
     "boolq": {
-        "hf_name": ("super_glue", "boolq"),
+        "hf_name": ("aps/super_glue", "boolq"),
         "text_key": None,
         "label_key": "label",
         "labels": ["false", "true"],
         "prefix": "answer question: ",
     },
     "cb": {
-        "hf_name": ("super_glue", "cb"),
+        "hf_name": ("aps/super_glue", "cb"),
         "text_key": None,
         "label_key": "label",
         "labels": ["entailment", "contradiction", "neutral"],
         "prefix": "classify cb: ",
     },
     "copa": {
-        "hf_name": ("super_glue", "copa"),
+        "hf_name": ("aps/super_glue", "copa"),
         "text_key": None,
         "label_key": "label",
         "labels": ["choice1", "choice2"],
         "prefix": "classify copa: ",
     },
     "wic": {
-        "hf_name": ("super_glue", "wic"),
+        "hf_name": ("aps/super_glue", "wic"),
         "text_key": None,
         "label_key": "label",
         "labels": ["false", "true"],
         "prefix": "classify wic: ",
     },
     "multirc": {
-        "hf_name": ("super_glue", "multirc"),
+        "hf_name": ("aps/super_glue", "multirc"),
         "text_key": None,
         "label_key": "label",
         "labels": ["false", "true"],
         "prefix": "classify multirc: ",
     },
     "imdb": {
-        "hf_name": "imdb",
+        "hf_name": "stanfordnlp/imdb",
         "text_key": "text",
         "label_key": "label",
         "labels": ["negative", "positive"],
         "prefix": "classify sentiment: ",
     },
-    "sst2_v2": {  # second copy of sst2 with different split to avoid overlap
-        "hf_name": ("glue", "sst2"),
+    "trec": {
+        "hf_name": "SetFit/TREC-QC",
+        "text_key": "text",
+        "label_key": "label_coarse",
+        "labels": ["DESC", "ENTY", "ABBR", "HUM", "NUM", "LOC"],
+        "prefix": "classify question: ",
+    },
+    "snli": {
+        "hf_name": "stanfordnlp/snli",
+        "text_key": None,   # special: premise + hypothesis
+        "label_key": "label",
+        "labels": ["entailment", "neutral", "contradiction"],
+        "prefix": "classify nli: ",
+        "filter_invalid_labels": True,  # SNLI has label=-1 for no-consensus examples
+    },
+    "cola": {
+        "hf_name": ("nyu-mll/glue", "cola"),
         "text_key": "sentence",
         "label_key": "label",
+        "labels": ["unacceptable", "acceptable"],
+        "prefix": "classify acceptability: ",
+    },
+    "yelp": {
+        "hf_name": "fancyzhx/yelp_polarity",
+        "text_key": "text",
+        "label_key": "label",
         "labels": ["negative", "positive"],
-        "prefix": "classify review: ",
+        "prefix": "classify sentiment: ",
+    },
+    "qnli": {
+        "hf_name": ("nyu-mll/glue", "qnli"),
+        "text_key": None,   # special: question + sentence
+        "label_key": "label",
+        "labels": ["entailment", "not_entailment"],
+        "prefix": "classify qnli: ",
+    },
+    "mrpc": {
+        "hf_name": ("nyu-mll/glue", "mrpc"),
+        "text_key": None,   # special: sentence1 + sentence2
+        "label_key": "label",
+        "labels": ["not_equivalent", "equivalent"],
+        "prefix": "classify paraphrase: ",
+    },
+    "20news": {
+        "hf_name": "SetFit/20_newsgroups",
+        "text_key": "text",
+        "label_key": "label",
+        "labels": [
+            "alt.atheism", "comp.graphics", "comp.os.ms-windows.misc",
+            "comp.sys.ibm.pc.hardware", "comp.sys.mac.hardware", "comp.windows.x",
+            "misc.forsale", "rec.autos", "rec.motorcycles", "rec.sport.baseball",
+            "rec.sport.hockey", "sci.crypt", "sci.electronics", "sci.med",
+            "sci.space", "soc.religion.christian", "talk.politics.guns",
+            "talk.politics.mideast", "talk.politics.misc", "talk.religion.misc"
+        ],
+        "prefix": "classify newsgroup: ",
     },
 }
+
+
+def _balanced_sample(hf_dataset, label_key: str, n_total: int, seed: int):
+    """
+    Return a balanced HF dataset subset: exactly (n_total // n_classes) examples
+    per class, shuffled with the given seed.
+
+    - Rows with label < 0 are silently dropped before sampling (handles SNLI -1).
+    - If a class has fewer rows than n_per_class, all available rows are taken.
+    - Using numpy default_rng(seed) (not global state) guarantees that two
+      independent runs with the same seed pick identical row indices.
+    """
+    rng = np.random.default_rng(seed)
+
+    all_labels = hf_dataset[label_key]
+    label_to_indices: Dict[int, list] = {}
+    for i, lbl in enumerate(all_labels):
+        if lbl < 0:
+            continue
+        label_to_indices.setdefault(lbl, []).append(i)
+
+    unique_labels = sorted(label_to_indices.keys())
+    n_classes = len(unique_labels)
+    n_per_class = n_total // n_classes
+
+    selected: List[int] = []
+    for lbl in unique_labels:
+        idxs = np.array(label_to_indices[lbl])
+        perm = rng.permutation(len(idxs))
+        chosen = idxs[perm[: min(n_per_class, len(idxs))]]
+        selected.extend(chosen.tolist())
+
+    selected = rng.permutation(selected).tolist()
+    return hf_dataset.select(selected)
 
 
 class CLTaskDataset(Dataset):
@@ -147,12 +232,14 @@ def _format_input(task_name: str, example: dict) -> str:
     cfg = TASK_CONFIG[task_name]
     prefix = cfg["prefix"]
 
-    if task_name == "mnli":
+    if task_name in ("mnli", "snli"):
         return prefix + "premise: " + example["premise"] + " hypothesis: " + example["hypothesis"]
     elif task_name in ("qqp",):
         return prefix + "question1: " + example["question1"] + " question2: " + example["question2"]
-    elif task_name in ("rte",):
+    elif task_name in ("rte", "mrpc"):
         return prefix + "sentence1: " + example["sentence1"] + " sentence2: " + example["sentence2"]
+    elif task_name == "qnli":
+        return prefix + "question: " + example["question"] + " sentence: " + example["sentence"]
     elif task_name == "boolq":
         return prefix + "question: " + example["question"] + " passage: " + example["passage"][:200]
     elif task_name in ("cb",):
@@ -186,14 +273,21 @@ def load_task(
     max_target_len: int = 8,
     seed: int = 42,
     num_workers: int = 0,
+    balanced: bool = True,
 ) -> Tuple[List[dict], DataLoader, DataLoader]:
     """
     Load, tokenise, and return (train_list, train_loader, test_loader).
 
     train_list: raw list of tokenised dicts (for buffer operations).
+
+    When balanced=True (default), each class contributes exactly
+    n_train // n_classes (and n_test // n_classes) examples, selected
+    with numpy.random.default_rng(seed) so results are fully reproducible
+    across machines given the same seed.
     """
     cfg = TASK_CONFIG[task_name]
     hf_name = cfg["hf_name"]
+    label_key = cfg["label_key"]
 
     if isinstance(hf_name, tuple):
         raw = load_dataset(*hf_name)
@@ -208,8 +302,12 @@ def load_task(
     else:
         test_split = "test"
 
-    train_raw = raw[train_split].shuffle(seed=seed).select(range(min(n_train, len(raw[train_split]))))
-    test_raw = raw[test_split].shuffle(seed=seed).select(range(min(n_test, len(raw[test_split]))))
+    if balanced:
+        train_raw = _balanced_sample(raw[train_split], label_key, n_train, seed)
+        test_raw = _balanced_sample(raw[test_split], label_key, n_test, seed)
+    else:
+        train_raw = raw[train_split].shuffle(seed=seed).select(range(min(n_train, len(raw[train_split]))))
+        test_raw = raw[test_split].shuffle(seed=seed).select(range(min(n_test, len(raw[test_split]))))
 
     label_list = cfg["labels"]
 

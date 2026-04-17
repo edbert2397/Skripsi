@@ -2,13 +2,8 @@
 """
 smoke_test_comparison.py - End-to-end sanity check for run_comparison.py methods.
 
-Runs the EXACT same pipeline as run_comparison.py (orthogonal, surprise, reservoir).
-
-Benchmark modes:
-  standard_cl  - Tiny smoke test (2 tasks, 10 train, 1 test, 5-slot buffer)
-  lnt          - Full LNT benchmark (15 tasks, 1000 train, 500 test, 300-slot buffer)
-                 This is the paper's primary setting where surprise-based selection
-                 shows the largest gains over random replay.
+Runs the EXACT same pipeline as run_comparison.py (orthogonal, surprise, reservoir)
+on a tiny slice of the RQ1 benchmark (2 tasks, 10 train, 1 test, 5-slot buffer).
 
 EMA settings mirror run_comparison.py exactly:
   orthogonal  -> EMA ON   (our method)
@@ -18,7 +13,6 @@ EMA settings mirror run_comparison.py exactly:
 Usage:
   python scripts/smoke_test_comparison.py
   python scripts/smoke_test_comparison.py --methods orthogonal surprise
-  python scripts/smoke_test_comparison.py --benchmark lnt --methods orthogonal surprise
   python scripts/smoke_test_comparison.py --no-fp16
 """
 
@@ -44,26 +38,14 @@ from src.data.datasets import load_task
 
 # ---- Benchmark configurations ----
 BENCHMARK_CONFIGS = {
-    "standard_cl": {
-        "tasks":       ["ag_news", "amazon_reviews"],   # first 2 tasks, order 0
+    "rq1": {
+        # First 2 tasks of RQ1 order 0 — verifies the pipeline without running all 15.
+        # For the real experiment use run_experiment.py / run_comparison.py.
+        "tasks":       ["sst2", "ag_news"],
         "n_train":     10,
         "n_test":      1,
         "buffer_size": 5,
-        "description": "Smoke test (2 tasks, tiny data)",
-    },
-    "lnt": {
-        # All 15 LNT tasks, but tiny data — verifies every dataset loads and
-        # the 15-task pipeline runs end-to-end without crashing.
-        # For the real experiment use run_experiment.py / run_comparison.py.
-        "tasks": [
-            "ag_news", "amazon_reviews", "dbpedia", "yahoo_answers",
-            "mnli", "qqp", "rte", "sst2",
-            "wic", "cb", "copa", "boolq", "multirc", "imdb", "sst2_v2",
-        ],
-        "n_train":     10,    # tiny — just enough to exercise the training loop
-        "n_test":      1,     # one sample to exercise the evaluator
-        "buffer_size": 15,    # 1 slot per task (exercises rebalancing logic)
-        "description": "LNT smoke test (15 tasks, tiny data — pipeline check only)",
+        "description": "RQ1 smoke test (2 tasks, tiny data — pipeline check only)",
     },
 }
 
@@ -71,6 +53,7 @@ BENCHMARK_CONFIGS = {
 COMPARISON_METHODS = {
     "orthogonal": {"selection": "orthogonal", "use_ema": True},
     "feature":    {"selection": "feature",    "use_ema": True},
+    "conflict":   {"selection": "conflict",   "use_ema": True},
     "surprise":   {"selection": "surprise",   "use_ema": True},
     "reservoir":  {"selection": "reservoir",  "use_ema": False},
 }
@@ -192,8 +175,8 @@ def parse_args():
     p.add_argument(
         "--benchmark",
         choices=list(BENCHMARK_CONFIGS.keys()),
-        default="standard_cl",
-        help="Benchmark setting: 'standard_cl' (tiny smoke test) or 'lnt' (full 15-task LNT run)",
+        default="rq1",
+        help="Benchmark setting (default: rq1)",
     )
     p.add_argument("--no-fp16", dest="fp16", action="store_false", default=True)
     return p.parse_args()

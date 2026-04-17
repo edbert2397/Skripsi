@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-run_experiment.py - Main entry point for all continual learning experiments.
+run_experiment.py - Main entry point for RQ1 continual learning experiments.
 
 Usage examples:
-  # Default (orthogonal + EMA, standard_cl, order 0, seed 42):
+  # Default (orthogonal + EMA, rq1, order 0, seed 42):
   python scripts/run_experiment.py
 
-  # SuRe baseline on LNT:
-  python scripts/run_experiment.py --selection surprise --benchmark lnt --order 0
+  # SuRe baseline:
+  python scripts/run_experiment.py --selection surprise
 
   # Our method, no EMA (ablation):
   python scripts/run_experiment.py --selection orthogonal --no-ema
@@ -47,10 +47,9 @@ from src.utils.logging import Logger
 
 # ---- RTX 4050 6GB defaults (paper-aligned) ----
 # buffer_size is None here — resolved in main() based on benchmark:
-#   standard_cl: 400  (2% of 4 * 5,000 = 20,000)
-#   lnt:         300  (2% of 15 * 1,000 = 15,000)
+#   rq1: 600  (2% of 15 * 2,000 = 30,000)
 DEFAULTS = dict(
-    benchmark="standard_cl",
+    benchmark="rq1",
     order=0,
     seed=42,
     selection="orthogonal",
@@ -85,8 +84,8 @@ def set_seed(seed: int):
 def parse_args():
     p = argparse.ArgumentParser(description="Orthogonal Replay CL experiments")
 
-    p.add_argument("--benchmark", choices=["standard_cl", "lnt"], default=DEFAULTS["benchmark"])
-    p.add_argument("--order", type=int, choices=[0, 1, 2], default=DEFAULTS["order"])
+    p.add_argument("--benchmark", choices=["rq1"], default=DEFAULTS["benchmark"])
+    p.add_argument("--order", type=int, choices=[0], default=DEFAULTS["order"])
     p.add_argument("--seed", type=int, default=DEFAULTS["seed"])
 
     p.add_argument("--selection", choices=["orthogonal", "feature", "conflict", "surprise", "reservoir", "hybrid"],
@@ -96,7 +95,7 @@ def parse_args():
 
     p.add_argument("--beta", type=float, default=DEFAULTS["beta"])
     p.add_argument("--buffer-size", type=int, default=None,
-                   help="Buffer size (default: 400 for standard_cl, 300 for lnt)")
+                   help="Buffer size (default: 600 for rq1)")
     p.add_argument("--replay-ratio", choices=["1:2", "1:4", "1:8", "1:16"], default=DEFAULTS["replay_ratio"])
 
     p.add_argument("--subspace-rank-k", type=int, default=DEFAULTS["subspace_rank_k"])
@@ -135,8 +134,9 @@ def main():
     set_seed(cfg.seed)
 
     # Resolve buffer size from benchmark if not explicitly overridden
+    # rq1: 2% of 15 tasks * 2,000 train = 30,000 total
     if cfg.buffer_size is None:
-        cfg.buffer_size = 400 if cfg.benchmark == "standard_cl" else 300
+        cfg.buffer_size = 600
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[Device] {device}")
@@ -174,11 +174,9 @@ def main():
     buffer = ReplayBuffer(max_size=cfg.buffer_size)
 
     # ---- Benchmark setup ----
+    # rq1: 2,000 balanced train / 1,000 balanced test per task
     task_order = get_task_order(cfg.benchmark, cfg.order)
-    if cfg.benchmark == "standard_cl":
-        n_train, n_test = 5000, 500
-    else:
-        n_train, n_test = 1000, 500
+    n_train, n_test = 2000, 1000
 
     # ---- Evaluator ----
     evaluator = Evaluator(device=device, use_fp16=cfg.fp16)
@@ -199,6 +197,7 @@ def main():
     print("[Data] Loading all tasks...")
     all_data = {}
     for task_name in task_order:
+        print(f"  [Load] {task_name}")
         train_samples, train_loader, test_loader = load_task(
             task_name, tokenizer, n_train, n_test,
             batch_size=cfg.batch_size_current,

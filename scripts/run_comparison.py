@@ -3,7 +3,7 @@
 run_comparison.py - Run head-to-head comparison experiments across methods.
 
 Compares orthogonal methods (O-Grad, O-Feat, O-Conflict) against baselines
-across benchmarks, task orders, and seeds.
+on the RQ1 benchmark (15-task thesis evaluation, order 0).
 
 Methods:
   orthogonal  - O-Grad: gradient subspace orthogonality + EMA (Method 1)
@@ -13,16 +13,16 @@ Methods:
   reservoir   - Random baseline: reservoir sampling (no selection bias)
 
 Usage examples:
-  # All methods, all benchmarks (full comparison):
+  # All methods, all seeds (full comparison):
   python scripts/run_comparison.py
 
   # Only compare orthogonal vs feature (O-Grad vs O-Feat):
   python scripts/run_comparison.py --methods orthogonal feature
 
-  # Only on standard_cl benchmark, one seed:
-  python scripts/run_comparison.py --benchmarks standard_cl --seeds 42
+  # Single seed:
+  python scripts/run_comparison.py --seeds 42
 
-  # Quick sanity check (1 seed x 1 order):
+  # Quick sanity check (1 seed):
   python scripts/run_comparison.py --fast
 """
 
@@ -45,9 +45,9 @@ METHODS = {
     "reservoir":  ["--selection", "reservoir", "--no-ema"],
 }
 
-ALL_BENCHMARKS = ["standard_cl", "lnt"]
+ALL_BENCHMARKS = ["rq1"]
 ALL_SEEDS      = [42, 123, 456]
-ALL_ORDERS     = [0, 1, 2]
+ALL_ORDERS     = [0]
 
 
 def run_single(method: str, benchmark: str, order: int, seed: int):
@@ -84,7 +84,7 @@ Methods:
 Examples:
   python scripts/run_comparison.py
   python scripts/run_comparison.py --methods orthogonal feature
-  python scripts/run_comparison.py --benchmarks lnt --seeds 42 123
+  python scripts/run_comparison.py --seeds 42 123
   python scripts/run_comparison.py --fast
         """,
     )
@@ -99,7 +99,7 @@ Examples:
         "--benchmarks", nargs="+",
         choices=ALL_BENCHMARKS,
         default=ALL_BENCHMARKS,
-        help="Benchmarks to run on (default: all)",
+        help="Benchmarks to run on (default: rq1)",
     )
     p.add_argument(
         "--seeds", nargs="+", type=int,
@@ -107,13 +107,13 @@ Examples:
         help="Seeds (default: 42 123 456)",
     )
     p.add_argument(
-        "--orders", nargs="+", type=int, choices=[0, 1, 2],
+        "--orders", nargs="+", type=int, choices=[0],
         default=ALL_ORDERS,
-        help="Task orders (default: 0 1 2)",
+        help="Task orders (default: 0)",
     )
     p.add_argument(
         "--fast", action="store_true",
-        help="Fast mode: 1 seed x 1 order x standard_cl only (quick VRAM/logic check)",
+        help="Fast mode: 1 seed x rq1 only (quick VRAM/logic check)",
     )
 
     cfg = p.parse_args()
@@ -125,9 +125,9 @@ Examples:
 
     if cfg.fast:
         seeds      = [seeds[0]]
-        orders     = [orders[0]]
-        benchmarks = ["standard_cl"]
-        print("[Fast mode] Running 1 seed x 1 order on standard_cl only.\n")
+        orders     = [0]
+        benchmarks = ["rq1"]
+        print("[Fast mode] Running 1 seed x order 0 on rq1 only.\n")
 
     total = len(methods) * len(benchmarks) * len(seeds) * len(orders)
     print(f"[Comparison] Queuing {total} runs:")

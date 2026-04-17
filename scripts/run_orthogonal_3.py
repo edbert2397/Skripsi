@@ -2,7 +2,7 @@
 """
 run_orthogonal_3.py - Run O-Conflict (Method 3: Gradient Conflict Score) only.
 
-Runs the gradient conflict-based selection method against baselines.
+Runs the gradient conflict-based selection method against baselines on RQ1.
 This script does NOT run O-Grad or O-Feat, so it won't overwrite their results.
 
 Usage:
@@ -12,8 +12,8 @@ Usage:
   # Quick sanity check:
   python scripts/run_orthogonal_3.py --fast
 
-  # Specific benchmarks/seeds:
-  python scripts/run_orthogonal_3.py --benchmarks standard_cl --seeds 42
+  # Specific seeds:
+  python scripts/run_orthogonal_3.py --seeds 42
 """
 
 import subprocess
@@ -30,6 +30,8 @@ def main():
     cmd = [
         sys.executable, str(COMPARISON_SCRIPT),
         "--methods", "conflict", "surprise", "reservoir",
+        "--benchmarks", "rq1",
+        "--orders", "0",
     ] + args
 
     print("=" * 60)

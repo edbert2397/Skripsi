@@ -1,4 +1,4 @@
-"""evaluator.py - Metrics: Final Performance, Average Performance, Forgetting."""
+"""evaluator.py - Metrics: Average Performance (AP), Final Performance (FP), Backward Transfer (BWT)."""
 
 import torch
 from typing import Dict, List
@@ -74,24 +74,57 @@ class Evaluator:
         self.all_results[after_task_id] = results
         return results
 
+    def compute_average_performance(self) -> float:
+        """AP (Learning Accuracy): mean of diagonal entries R_{j,j}.
+
+        R_{j,j} is the accuracy on task j evaluated immediately after training
+        on task j — a pure plasticity measure unaffected by later forgetting.
+        Formula: AP = (1/T) * sum_{j=1}^{T} R_{j,j}
+        """
+        tasks = sorted(self.all_results.keys())
+        diagonal = [self.all_results[j][j] for j in tasks if j in self.all_results[j]]
+        return sum(diagonal) / len(diagonal) if diagonal else 0.0
+
     def compute_final_performance(self) -> float:
-        """FP: average accuracy across all tasks after the last task."""
+        """FP (Average Accuracy): mean accuracy across all tasks after the last task.
+
+        Formula: FP = (1/T) * sum_{j=1}^{T} R_{T,j}
+        """
         last_task = max(self.all_results.keys())
         return sum(self.all_results[last_task].values()) / len(self.all_results[last_task])
 
-    def compute_average_performance(self) -> float:
-        """AP: average accuracy across all tasks and all evaluation points."""
-        scores = []
-        for task_results in self.all_results.values():
-            scores.extend(task_results.values())
-        return sum(scores) / len(scores) if scores else 0.0
+    def compute_backward_transfer(self) -> float:
+        """BWT (Backward Transfer): measures how much learning new tasks affects old ones.
+
+        Formula: BWT = (1/(T-1)) * sum_{i=1}^{T-1} (R_{T,i} - R_{i,i})
+        - BWT < 0: Catastrophic Forgetting (old tasks overwritten)
+        - BWT = 0: No forgetting
+        - BWT > 0: Positive Transfer (new learning improved old tasks)
+        """
+        tasks = sorted(self.all_results.keys())
+        T = tasks[-1]
+        if len(tasks) < 2:
+            return 0.0
+        bwt_scores = [
+            self.all_results[T][i] - self.all_results[i][i]
+            for i in tasks[:-1]  # i = 1 to T-1
+            if i in self.all_results[T] and i in self.all_results[i]
+        ]
+        return sum(bwt_scores) / len(bwt_scores) if bwt_scores else 0.0
 
     def compute_forgetting(self) -> float:
-        """F = AP - FP (lower is better; negative = improvement over time)."""
-        return self.compute_average_performance() - self.compute_final_performance()
+        """Forgetting = -BWT: how much old-task accuracy dropped.
+
+        Forgetting = (1/(T-1)) * sum_{i=1}^{T-1} (R_{i,i} - R_{T,i})
+        - Forgetting > 0: old tasks degraded (catastrophic forgetting)
+        - Forgetting = 0: no forgetting
+        - Forgetting < 0: positive backward transfer
+        Lower is better.
+        """
+        return -self.compute_backward_transfer()
 
     def summary(self) -> Dict[str, float]:
-        fp = self.compute_final_performance()
         ap = self.compute_average_performance()
-        f = self.compute_forgetting()
-        return {"FP": fp, "AP": ap, "Forgetting": f}
+        fp = self.compute_final_performance()
+        forgetting = self.compute_forgetting()
+        return {"AP": ap, "FP": fp, "Forgetting": forgetting}

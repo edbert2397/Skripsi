@@ -2,7 +2,7 @@
 """
 run_orthogonal_1.py - Run O-Grad (Method 1: Gradient Subspace Orthogonality) only.
 
-Runs the orthogonal gradient-based selection method against baselines.
+Runs the orthogonal gradient-based selection method against baselines on RQ1.
 This script does NOT run O-Feat, so it won't overwrite O-Feat results.
 
 Usage:
@@ -12,8 +12,8 @@ Usage:
   # Quick sanity check:
   python scripts/run_orthogonal_1.py --fast
 
-  # Specific benchmarks/seeds:
-  python scripts/run_orthogonal_1.py --benchmarks standard_cl --seeds 42
+  # Specific seeds:
+  python scripts/run_orthogonal_1.py --seeds 42
 """
 
 import subprocess
@@ -30,6 +30,8 @@ def main():
     cmd = [
         sys.executable, str(COMPARISON_SCRIPT),
         "--methods", "orthogonal", "surprise", "reservoir",
+        "--benchmarks", "rq1",
+        "--orders", "0",
     ] + args
 
     print("=" * 60)

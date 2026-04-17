@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(grep -r \"backward\\\\|BWT\\\\|transfer\" /e/Kuliah/sem8/skripsi/RQ1 --include=*.py --include=*.md)",
+      "Bash(venv/Scripts/python.exe -c ' *)"
     ]
   },
   "outputStyle": "Explanatory"
