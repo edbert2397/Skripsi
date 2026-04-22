@@ -21,3 +21,16 @@ class ReservoirSelector(BaseSelector):
     ) -> List[float]:
         """Assign random scores (equivalent to reservoir sampling)."""
         return [random.random() for _ in candidates]
+
+    def select_for_buffer(
+        self,
+        model,
+        candidates: List[dict],
+        quota: int,
+        device: torch.device,
+    ) -> tuple[List[dict], None]:
+        """Select randomly and return None for scores to trigger random trimming."""
+        if quota <= 0 or not candidates:
+            return [], None
+        selected = random.sample(candidates, min(quota, len(candidates)))
+        return selected, None

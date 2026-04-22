@@ -193,11 +193,11 @@ class ContinualTrainer:
         n_tasks_after = self.buffer.n_tasks() + (0 if task_id in self.buffer._store else 1)
         quota = max(1, self.buffer.max_size // n_tasks_after)
         print(f"[Buffer] Selecting {quota} samples for task {task_id} from {len(candidate_dataset)} candidates...")
-        selected = self.selector.select_for_buffer(
+        selected, scores = self.selector.select_for_buffer(
             model=self.model,
             candidates=candidate_dataset,
             quota=quota,
             device=self.device,
         )
-        self.buffer.update(task_id, selected)
+        self.buffer.update(task_id, selected, scores=scores)
         print(f"[Buffer] Updated: {self.buffer.task_counts()}")

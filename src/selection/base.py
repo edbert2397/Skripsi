@@ -1,7 +1,7 @@
 """base.py - Abstract interface for all buffer selectors."""
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import torch
 
 
@@ -26,13 +26,23 @@ class BaseSelector(ABC):
         candidates: List[dict],
         quota: int,
         device: torch.device,
-    ) -> List[dict]:
-        """Select top-quota candidates by score."""
+    ) -> Tuple[List[dict], Optional[List[float]]]:
+        """Select top-quota candidates by score.
+
+        Returns:
+            (selected_samples, selected_scores) — both lists have length <= quota,
+            ordered by descending score. The scores are passed through to the buffer
+            so that future trimming can preserve the highest-valued samples.
+        """
         if quota <= 0 or not candidates:
-            return []
+            return [], []
         scores = self.score_samples(model, candidates, device)
         indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
-        return [candidates[i] for i in indices[:quota]]
+        top_indices = indices[:quota]
+        return (
+            [candidates[i] for i in top_indices],
+            [scores[i] for i in top_indices],
+        )
 
     def prepare_for_task(self, model, dataloader, device: torch.device):
         """
