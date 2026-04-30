@@ -2,7 +2,7 @@ from .orthogonal import OrthogonalSelector
 from .feature import FeatureSelector
 from .conflict import ConflictSelector
 from .surprise import SurpriseSelector
-from .reservoir import ReservoirSelector
+from .reservoir import RandomBalancedSelector
 from .hybrid import HybridSelector
 
 
@@ -36,8 +36,8 @@ def build_selector(cfg):
         )
     elif method == "surprise":
         return SurpriseSelector(use_fp16=use_fp16)
-    elif method == "reservoir":
-        return ReservoirSelector()
+    elif method in ("reservoir", "random_balanced"):
+        return RandomBalancedSelector(seed=getattr(cfg, "seed", 42))
     elif method == "hybrid":
         return HybridSelector(
             alpha=alpha,

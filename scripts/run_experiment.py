@@ -171,7 +171,7 @@ def main():
     selector = build_selector(cfg)
 
     # ---- Build buffer ----
-    buffer = ReplayBuffer(max_size=cfg.buffer_size)
+    buffer = ReplayBuffer(max_size=cfg.buffer_size, seed=cfg.seed)
 
     # ---- Benchmark setup ----
     # rq1: 2,000 balanced train / 1,000 balanced test per task

@@ -1,0 +1,14 @@
+# SuRe "Random-A" / Random Buffer Update After baseline (Hazard et al., 2025).
+#
+# Within-task uniform random selection, with per-task balancing (quota = S/d)
+# enforced by ReplayBuffer.update. NOT classical Vitter (1985) reservoir
+# sampling. Functionally identical to `selection_method: reservoir`; this file
+# exists only so future runs use the clearer name in their output paths.
+
+defaults: base.yaml
+
+selection:
+  method: "random_balanced"
+
+buffer:
+  size: 1500

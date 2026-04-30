@@ -14,12 +14,18 @@ of the codebase does not need to change.
 import random
 from typing import Dict, List, Optional, Tuple
 
+import numpy as np
+
 
 class ReplayBuffer:
-    def __init__(self, max_size: int = 300):
+    def __init__(self, max_size: int = 300, seed: Optional[int] = None):
         self.max_size = max_size
         # task_id -> list of (sample, score) pairs
         self._store: Dict[int, List[Tuple[dict, float]]] = {}
+        # Local rng used only for the None-score fallback in update(); keeps
+        # Random-A trimming reproducible across machines. sample()/sample_by_task()
+        # intentionally still use the global `random` (already seeded in run script).
+        self._rng = np.random.default_rng(seed) if seed is not None else None
 
     def __len__(self) -> int:
         return sum(len(v) for v in self._store.values())
@@ -41,9 +47,13 @@ class ReplayBuffer:
         if not samples:
             return
 
-        # Assign scores if not provided (random fallback for Reservoir)
+        # Assign scores if not provided (random fallback for Random-A / Reservoir).
+        # Use the seeded local rng when available so trimming order is reproducible.
         if scores is None:
-            scores = [random.random() for _ in samples]
+            if self._rng is not None:
+                scores = self._rng.random(len(samples)).tolist()
+            else:
+                scores = [random.random() for _ in samples]
 
         # Compute new quota
         n_tasks = len(self._store) + (0 if task_id in self._store else 1)
