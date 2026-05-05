@@ -3,7 +3,7 @@
   "order": 0,
   "seed": 42,
   "selection": "reservoir",
-  "use_ema": false,
+  "use_ema": true,
   "use_orthogonal_lora": false,
   "beta": 0.995,
   "buffer_size": 600,

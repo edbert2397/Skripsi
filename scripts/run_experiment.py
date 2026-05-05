@@ -196,14 +196,26 @@ def main():
     all_test_loaders = {}
     print("[Data] Loading all tasks...")
     all_data = {}
+    task_sizes = {}
     for task_name in task_order:
-        print(f"  [Load] {task_name}")
         train_samples, train_loader, test_loader = load_task(
             task_name, tokenizer, n_train, n_test,
             batch_size=cfg.batch_size_current,
             seed=cfg.seed,
         )
+        n_tr = len(train_samples)
+        n_te = len(test_loader.dataset)
+        task_sizes[task_name] = {"train": n_tr, "test": n_te}
+        print(f"  [Load] {task_name}: train={n_tr}, test={n_te}")
         all_data[task_name] = (train_samples, train_loader, test_loader)
+
+    # Summary table so it's easy to scan against the requested n_train/n_test
+    print(f"\n[Data] Sample counts per task (requested train={n_train}, test={n_test}):")
+    print(f"  {'task':<16} {'train':>7} {'test':>7}")
+    for tn in task_order:
+        s = task_sizes[tn]
+        print(f"  {tn:<16} {s['train']:>7} {s['test']:>7}")
+    print()
 
     # ---- Main CL loop ----
     for task_id, task_name in enumerate(task_order):
@@ -238,7 +250,7 @@ def main():
 
     out_path = logger.log_dir / "final_results.json"
     with open(out_path, "w") as f:
-        json.dump({"summary": summary, "all_results": {
+        json.dump({"summary": summary, "task_sizes": task_sizes, "all_results": {
             str(k): {str(kk): vv for kk, vv in v.items()}
             for k, v in evaluator.all_results.items()
         }}, f, indent=2)

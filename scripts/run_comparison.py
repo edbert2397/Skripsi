@@ -42,7 +42,7 @@ METHODS = {
     "feature":    ["--selection", "feature"],
     "conflict":   ["--selection", "conflict"],
     "surprise":   ["--selection", "surprise"],
-    "reservoir":  ["--selection", "reservoir", "--no-ema"],
+    "reservoir":  ["--selection", "reservoir"],
 }
 
 ALL_BENCHMARKS = ["rq1"]
@@ -79,7 +79,7 @@ Methods:
   feature     O-Feat: feature subspace orthogonality + EMA (Method 2)
   conflict    O-Conflict: gradient conflict score + EMA (Method 3)
   surprise    SuRe baseline: surprise-based selection + EMA
-  reservoir   Random baseline: reservoir sampling, no EMA
+  reservoir   Random baseline: reservoir sampling + EMA
 
 Examples:
   python scripts/run_comparison.py
