@@ -1,220 +1,80 @@
 """
-datasets.py - Dataset loading and T5 tokenisation for all benchmark tasks.
+datasets.py - CSV-backed dataset loading and T5 tokenisation.
 
-All tasks are framed as seq2seq: input is "task: text", output is label string.
-This matches the SuRe paper's T5-Large setup.
+Reads from cl14_balanced_train_cleaned.csv / cl14_balanced_test_cleaned.csv
+at the project root. Only `task_name`, `class_label`, and `text` columns are
+used. No task prefix is prepended to the input text.
 """
+
+import csv
+import sys
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import T5Tokenizer
-from datasets import load_dataset
-from typing import List, Tuple, Dict, Optional
 
 
-# ---- Task definitions ----
-TASK_CONFIG = {
-    "ag_news": {
-        "hf_name": "fancyzhx/ag_news",
-        "text_key": "text",
-        "label_key": "label",
-        "labels": ["World", "Sports", "Business", "Sci/Tech"],
-        "prefix": "classify news: ",
-    },
-    "amazon_reviews": {
-        "hf_name": "fancyzhx/amazon_polarity",
-        "text_key": "content",
-        "label_key": "label",
-        "labels": ["negative", "positive"],
-        "prefix": "classify sentiment: ",
-    },
-    "dbpedia": {
-        "hf_name": "fancyzhx/dbpedia_14",
-        "text_key": "content",
-        "label_key": "label",
-        "labels": [
-            "Company", "EducationalInstitution", "Artist", "Athlete",
-            "OfficeHolder", "MeanOfTransportation", "Building", "NaturalPlace",
-            "Village", "Animal", "Plant", "Album", "Film", "WrittenWork"
-        ],
-        "prefix": "classify topic: ",
-    },
-    "yahoo_answers": {
-        "hf_name": "community-datasets/yahoo_answers_topics",
-        "text_key": "question_title",
-        "label_key": "topic",
-        "labels": [
-            "Society & Culture", "Science & Mathematics", "Health",
-            "Education & Reference", "Computers & Internet", "Sports",
-            "Business & Finance", "Entertainment & Music",
-            "Family & Relationships", "Politics & Government"
-        ],
-        "prefix": "classify question: ",
-    },
-    "sst2": {
-        "hf_name": ("nyu-mll/glue", "sst2"),
-        "text_key": "sentence",
-        "label_key": "label",
-        "labels": ["negative", "positive"],
-        "prefix": "classify sentiment: ",
-    },
-    "mnli": {
-        "hf_name": ("nyu-mll/glue", "mnli"),
-        "text_key": None,   # special handling
-        "label_key": "label",
-        "labels": ["entailment", "neutral", "contradiction"],
-        "prefix": "classify nli: ",
-        "test_split": "validation_matched",
-    },
-    "qqp": {
-        "hf_name": ("nyu-mll/glue", "qqp"),
-        "text_key": None,
-        "label_key": "label",
-        "labels": ["not duplicate", "duplicate"],
-        "prefix": "classify paraphrase: ",
-    },
-    "rte": {
-        "hf_name": ("nyu-mll/glue", "rte"),
-        "text_key": None,
-        "label_key": "label",
-        "labels": ["entailment", "not entailment"],
-        "prefix": "classify rte: ",
-    },
-    "boolq": {
-        "hf_name": ("aps/super_glue", "boolq"),
-        "text_key": None,
-        "label_key": "label",
-        "labels": ["false", "true"],
-        "prefix": "answer question: ",
-    },
-    "cb": {
-        "hf_name": ("aps/super_glue", "cb"),
-        "text_key": None,
-        "label_key": "label",
-        "labels": ["entailment", "contradiction", "neutral"],
-        "prefix": "classify cb: ",
-    },
-    "copa": {
-        "hf_name": ("aps/super_glue", "copa"),
-        "text_key": None,
-        "label_key": "label",
-        "labels": ["choice1", "choice2"],
-        "prefix": "classify copa: ",
-    },
-    "wic": {
-        "hf_name": ("aps/super_glue", "wic"),
-        "text_key": None,
-        "label_key": "label",
-        "labels": ["false", "true"],
-        "prefix": "classify wic: ",
-    },
-    "multirc": {
-        "hf_name": ("aps/super_glue", "multirc"),
-        "text_key": None,
-        "label_key": "label",
-        "labels": ["false", "true"],
-        "prefix": "classify multirc: ",
-    },
-    "imdb": {
-        "hf_name": "stanfordnlp/imdb",
-        "text_key": "text",
-        "label_key": "label",
-        "labels": ["negative", "positive"],
-        "prefix": "classify sentiment: ",
-    },
-    "trec": {
-        "hf_name": "SetFit/TREC-QC",
-        "text_key": "text",
-        "label_key": "label_coarse",
-        "labels": ["DESC", "ENTY", "ABBR", "HUM", "NUM", "LOC"],
-        "prefix": "classify question: ",
-    },
-    "snli": {
-        "hf_name": "stanfordnlp/snli",
-        "text_key": None,   # special: premise + hypothesis
-        "label_key": "label",
-        "labels": ["entailment", "neutral", "contradiction"],
-        "prefix": "classify nli: ",
-        "filter_invalid_labels": True,  # SNLI has label=-1 for no-consensus examples
-    },
-    "cola": {
-        "hf_name": ("nyu-mll/glue", "cola"),
-        "text_key": "sentence",
-        "label_key": "label",
-        "labels": ["unacceptable", "acceptable"],
-        "prefix": "classify acceptability: ",
-    },
-    "yelp": {
-        "hf_name": "fancyzhx/yelp_polarity",
-        "text_key": "text",
-        "label_key": "label",
-        "labels": ["negative", "positive"],
-        "prefix": "classify sentiment: ",
-    },
-    "qnli": {
-        "hf_name": ("nyu-mll/glue", "qnli"),
-        "text_key": None,   # special: question + sentence
-        "label_key": "label",
-        "labels": ["entailment", "not_entailment"],
-        "prefix": "classify qnli: ",
-    },
-    "mrpc": {
-        "hf_name": ("nyu-mll/glue", "mrpc"),
-        "text_key": None,   # special: sentence1 + sentence2
-        "label_key": "label",
-        "labels": ["not_equivalent", "equivalent"],
-        "prefix": "classify paraphrase: ",
-    },
-    "20news": {
-        "hf_name": "SetFit/20_newsgroups",
-        "text_key": "text",
-        "label_key": "label",
-        "labels": [
-            "alt.atheism", "comp.graphics", "comp.os.ms-windows.misc",
-            "comp.sys.ibm.pc.hardware", "comp.sys.mac.hardware", "comp.windows.x",
-            "misc.forsale", "rec.autos", "rec.motorcycles", "rec.sport.baseball",
-            "rec.sport.hockey", "sci.crypt", "sci.electronics", "sci.med",
-            "sci.space", "soc.religion.christian", "talk.politics.guns",
-            "talk.politics.mideast", "talk.politics.misc", "talk.religion.misc"
-        ],
-        "prefix": "classify newsgroup: ",
-    },
-}
+# Some rows (long IMDB / Yelp / Amazon reviews) exceed the default 131_072 limit.
+csv.field_size_limit(min(sys.maxsize, 2**31 - 1))
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+TRAIN_CSV = PROJECT_ROOT / "cl14_balanced_train_cleaned.csv"
+TEST_CSV = PROJECT_ROOT / "cl14_balanced_test_cleaned.csv"
+
+_CSV_CACHE: Dict[Path, Dict[str, List[dict]]] = {}
 
 
-def _balanced_sample(hf_dataset, label_key: str, n_total: int, seed: int):
-    """
-    Return a balanced HF dataset subset: exactly (n_total // n_classes) examples
-    per class, shuffled with the given seed.
+def _load_csv_grouped(csv_path: Path) -> Dict[str, List[dict]]:
+    """Read a CSV once and group rows by task_name. Result is cached per path."""
+    if csv_path in _CSV_CACHE:
+        return _CSV_CACHE[csv_path]
+    if not csv_path.exists():
+        raise FileNotFoundError(f"CSV not found: {csv_path}")
 
-    - Rows with label < 0 are silently dropped before sampling (handles SNLI -1).
-    - If a class has fewer rows than n_per_class, all available rows are taken.
-    - Using numpy default_rng(seed) (not global state) guarantees that two
-      independent runs with the same seed pick identical row indices.
-    """
+    grouped: Dict[str, List[dict]] = {}
+    with open(csv_path, "r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            grouped.setdefault(row["task_name"], []).append({
+                "text": row["text"],
+                "class_label": row["class_label"],
+            })
+    _CSV_CACHE[csv_path] = grouped
+    return grouped
+
+
+def _balanced_take(rows: List[dict], n_total: int, seed: int) -> List[dict]:
+    """Take ~n_total rows balanced across class_label, deterministic given seed."""
     rng = np.random.default_rng(seed)
+    by_label: Dict[str, List[int]] = {}
+    for i, r in enumerate(rows):
+        by_label.setdefault(r["class_label"], []).append(i)
 
-    all_labels = hf_dataset[label_key]
-    label_to_indices: Dict[int, list] = {}
-    for i, lbl in enumerate(all_labels):
-        if lbl < 0:
-            continue
-        label_to_indices.setdefault(lbl, []).append(i)
+    labels = sorted(by_label.keys())
+    n_per_class = max(1, n_total // len(labels))
 
-    unique_labels = sorted(label_to_indices.keys())
-    n_classes = len(unique_labels)
-    n_per_class = n_total // n_classes
-
-    selected: List[int] = []
-    for lbl in unique_labels:
-        idxs = np.array(label_to_indices[lbl])
+    chosen: List[int] = []
+    for lbl in labels:
+        idxs = np.array(by_label[lbl])
         perm = rng.permutation(len(idxs))
-        chosen = idxs[perm[: min(n_per_class, len(idxs))]]
-        selected.extend(chosen.tolist())
+        chosen.extend(idxs[perm[: min(n_per_class, len(idxs))]].tolist())
 
-    selected = rng.permutation(selected).tolist()
-    return hf_dataset.select(selected)
+    chosen = rng.permutation(chosen).tolist()
+    return [rows[i] for i in chosen]
+
+
+def get_task_labels(task_name: str) -> List[str]:
+    """Sorted list of `class_label` strings observed for a task in the train CSV."""
+    grouped = _load_csv_grouped(TRAIN_CSV)
+    if task_name not in grouped:
+        raise KeyError(
+            f"task_name '{task_name}' not found in {TRAIN_CSV.name}. "
+            f"Available: {sorted(grouped.keys())}"
+        )
+    return sorted({r["class_label"] for r in grouped[task_name]})
 
 
 class CLTaskDataset(Dataset):
@@ -226,33 +86,6 @@ class CLTaskDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.samples[idx]
-
-
-def _format_input(task_name: str, example: dict) -> str:
-    cfg = TASK_CONFIG[task_name]
-    prefix = cfg["prefix"]
-
-    if task_name in ("mnli", "snli"):
-        return prefix + "premise: " + example["premise"] + " hypothesis: " + example["hypothesis"]
-    elif task_name in ("qqp",):
-        return prefix + "question1: " + example["question1"] + " question2: " + example["question2"]
-    elif task_name in ("rte", "mrpc"):
-        return prefix + "sentence1: " + example["sentence1"] + " sentence2: " + example["sentence2"]
-    elif task_name == "qnli":
-        return prefix + "question: " + example["question"] + " sentence: " + example["sentence"]
-    elif task_name == "boolq":
-        return prefix + "question: " + example["question"] + " passage: " + example["passage"][:200]
-    elif task_name in ("cb",):
-        return prefix + "premise: " + example["premise"] + " hypothesis: " + example["hypothesis"]
-    elif task_name == "copa":
-        return prefix + "premise: " + example["premise"] + " choice1: " + example["choice1"] + " choice2: " + example["choice2"]
-    elif task_name == "wic":
-        return prefix + "word: " + example["word"] + " sentence1: " + example["sentence1"] + " sentence2: " + example["sentence2"]
-    elif task_name == "multirc":
-        return prefix + "paragraph: " + example["paragraph"][:200] + " question: " + example["question"] + " answer: " + example["answer"]
-    else:
-        text_key = cfg["text_key"]
-        return prefix + str(example[text_key])[:300]
 
 
 def _collate_fn(batch):
@@ -276,61 +109,55 @@ def load_task(
     balanced: bool = True,
 ) -> Tuple[List[dict], DataLoader, DataLoader]:
     """
-    Load, tokenise, and return (train_list, train_loader, test_loader).
+    Load a task from the CL14 cleaned CSVs, tokenise it, and return
+    (train_samples, train_loader, test_loader).
 
-    train_list: raw list of tokenised dicts (for buffer operations).
-
-    When balanced=True (default), each class contributes exactly
-    n_train // n_classes (and n_test // n_classes) examples, selected
-    with numpy.random.default_rng(seed) so results are fully reproducible
-    across machines given the same seed.
+    - Inputs are the raw `text` column (no prefix).
+    - Targets are the raw `class_label` column.
+    - When balanced=True, n_train // n_classes (and n_test // n_classes) rows
+      are drawn per class via numpy.random.default_rng(seed).
     """
-    cfg = TASK_CONFIG[task_name]
-    hf_name = cfg["hf_name"]
-    label_key = cfg["label_key"]
+    train_grouped = _load_csv_grouped(TRAIN_CSV)
+    test_grouped = _load_csv_grouped(TEST_CSV)
 
-    if isinstance(hf_name, tuple):
-        raw = load_dataset(*hf_name)
-    else:
-        raw = load_dataset(hf_name)
-
-    train_split = "train"
-    if "test_split" in cfg:
-        test_split = cfg["test_split"]
-    elif "validation" in raw:
-        test_split = "validation"
-    else:
-        test_split = "test"
+    if task_name not in train_grouped:
+        raise KeyError(
+            f"task_name '{task_name}' not found in {TRAIN_CSV.name}. "
+            f"Available: {sorted(train_grouped.keys())}"
+        )
+    if task_name not in test_grouped:
+        raise KeyError(
+            f"task_name '{task_name}' not found in {TEST_CSV.name}. "
+            f"Available: {sorted(test_grouped.keys())}"
+        )
 
     if balanced:
-        train_raw = _balanced_sample(raw[train_split], label_key, n_train, seed)
-        test_raw = _balanced_sample(raw[test_split], label_key, n_test, seed)
+        train_rows = _balanced_take(train_grouped[task_name], n_train, seed)
+        test_rows = _balanced_take(test_grouped[task_name], n_test, seed)
     else:
-        train_raw = raw[train_split].shuffle(seed=seed).select(range(min(n_train, len(raw[train_split]))))
-        test_raw = raw[test_split].shuffle(seed=seed).select(range(min(n_test, len(raw[test_split]))))
+        rng = np.random.default_rng(seed)
+        all_train = train_grouped[task_name]
+        all_test = test_grouped[task_name]
+        ti = rng.permutation(len(all_train))[: min(n_train, len(all_train))]
+        te = rng.permutation(len(all_test))[: min(n_test, len(all_test))]
+        train_rows = [all_train[i] for i in ti.tolist()]
+        test_rows = [all_test[i] for i in te.tolist()]
 
-    label_list = cfg["labels"]
-
-    def tokenise(example):
-        input_text = _format_input(task_name, example)
-        label_id = example[cfg["label_key"]]
-        target_text = label_list[label_id]
-
+    def tokenise(row: dict) -> dict:
         model_inputs = tokenizer(
-            input_text,
+            row["text"],
             max_length=max_input_len,
             padding="max_length",
             truncation=True,
             return_tensors="pt",
         )
         target_enc = tokenizer(
-            text_target=target_text,
+            text_target=row["class_label"],
             max_length=max_target_len,
             padding="max_length",
             truncation=True,
             return_tensors="pt",
         )
-
         labels = target_enc["input_ids"].squeeze(0)
         labels[labels == tokenizer.pad_token_id] = -100
 
@@ -340,14 +167,20 @@ def load_task(
             "labels": labels,
         }
 
-    train_samples = [tokenise(ex) for ex in train_raw]
-    test_samples = [tokenise(ex) for ex in test_raw]
+    train_samples = [tokenise(r) for r in train_rows]
+    test_samples = [tokenise(r) for r in test_rows]
 
     train_ds = CLTaskDataset(train_samples)
     test_ds = CLTaskDataset(test_samples)
 
     pin = num_workers > 0
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, collate_fn=_collate_fn, num_workers=num_workers, pin_memory=pin)
-    test_loader = DataLoader(test_ds, batch_size=batch_size * 2, shuffle=False, collate_fn=_collate_fn, num_workers=num_workers, pin_memory=pin)
+    train_loader = DataLoader(
+        train_ds, batch_size=batch_size, shuffle=True,
+        collate_fn=_collate_fn, num_workers=num_workers, pin_memory=pin,
+    )
+    test_loader = DataLoader(
+        test_ds, batch_size=batch_size * 2, shuffle=False,
+        collate_fn=_collate_fn, num_workers=num_workers, pin_memory=pin,
+    )
 
     return train_samples, train_loader, test_loader

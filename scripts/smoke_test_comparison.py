@@ -39,7 +39,7 @@ from src.data.datasets import load_task
 # ---- Benchmark configurations ----
 BENCHMARK_CONFIGS = {
     "rq1": {
-        # First 2 tasks of RQ1 order 0 — verifies the pipeline without running all 15.
+        # First 2 tasks of RQ1 order 0 — verifies the pipeline without running all 14.
         # For the real experiment use run_experiment.py / run_comparison.py.
         "tasks":       ["sst2", "ag_news"],
         "n_train":     10,

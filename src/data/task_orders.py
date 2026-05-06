@@ -2,13 +2,14 @@
 
 from typing import List
 
-# RQ1 benchmark: 15-task sequence matching the thesis evaluation protocol.
+# RQ1 benchmark: 14-task sequence (CL14, trec dropped).
+# Task names match the cl14_balanced_*_cleaned.csv `task_name` column.
 # Each task: 2,000 balanced train / 1,000 balanced test, seed=42.
 RQ1_ORDERS = {
     0: [
-        "sst2", "ag_news", "mnli", "trec", "imdb",
-        "dbpedia", "snli", "cola", "yelp", "yahoo_answers",
-        "qnli", "mrpc", "amazon_reviews", "20news", "rte",
+        "sst2", "ag_news", "mnli", "imdb", "dbpedia",
+        "snli", "cola", "yelp", "yahoo", "qnli",
+        "mrpc", "amazon", "newsgroup20", "rte",
     ],
 }
 

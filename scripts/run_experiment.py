@@ -47,7 +47,7 @@ from src.utils.logging import Logger
 
 # ---- RTX 4050 6GB defaults (paper-aligned) ----
 # buffer_size is None here — resolved in main() based on benchmark:
-#   rq1: 600  (2% of 15 * 2,000 = 30,000)
+#   rq1: 560  (2% of 14 * 2,000 = 28,000)
 DEFAULTS = dict(
     benchmark="rq1",
     order=0,
@@ -95,7 +95,7 @@ def parse_args():
 
     p.add_argument("--beta", type=float, default=DEFAULTS["beta"])
     p.add_argument("--buffer-size", type=int, default=None,
-                   help="Buffer size (default: 600 for rq1)")
+                   help="Buffer size (default: 560 for rq1)")
     p.add_argument("--replay-ratio", choices=["1:2", "1:4", "1:8", "1:16"], default=DEFAULTS["replay_ratio"])
 
     p.add_argument("--subspace-rank-k", type=int, default=DEFAULTS["subspace_rank_k"])
@@ -134,9 +134,9 @@ def main():
     set_seed(cfg.seed)
 
     # Resolve buffer size from benchmark if not explicitly overridden
-    # rq1: 2% of 15 tasks * 2,000 train = 30,000 total
+    # rq1: 2% of 14 tasks * 2,000 train = 28,000 total
     if cfg.buffer_size is None:
-        cfg.buffer_size = 600
+        cfg.buffer_size = 560
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"[Device] {device}")

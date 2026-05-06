@@ -4,7 +4,7 @@ smoke_test.py - End-to-end sanity check on tiny data.
 
 Runs the EXACT same pipeline as run_experiment.py but with:
   - 10 training samples, 5 test samples per task
-  - 2 tasks only (ag_news -> amazon_reviews)
+  - 2 tasks only (ag_news -> amazon)
   - Tiny buffer (5 slots)
   - 1 gradient accumulation step (no accumulation overhead)
   - All (or one specified) selector(s), each with a fresh model
@@ -38,7 +38,7 @@ from src.training.evaluator import Evaluator
 from src.data.datasets import load_task
 
 # ---- Fixed smoke-test scale ----
-SMOKE_TASKS   = ["ag_news", "amazon_reviews"]  # first 2 of standard_cl order 0
+SMOKE_TASKS   = ["ag_news", "amazon"]  # both task_names exist in cl14 CSV
 N_TRAIN       = 10
 N_TEST        = 5
 BUFFER_SIZE   = 5

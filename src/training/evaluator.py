@@ -36,14 +36,14 @@ class Evaluator:
                     generated_ids = model.generate(
                         input_ids=input_ids,
                         attention_mask=attention_mask,
-                        max_new_tokens=5,
+                        max_new_tokens=8,
                         do_sample=False,
                     )
             else:
                 generated_ids = model.generate(
                     input_ids=input_ids,
                     attention_mask=attention_mask,
-                    max_new_tokens=5,
+                    max_new_tokens=8,
                     do_sample=False,
                 )
 

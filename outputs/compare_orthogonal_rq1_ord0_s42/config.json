@@ -6,7 +6,7 @@
   "use_ema": true,
   "use_orthogonal_lora": false,
   "beta": 0.995,
-  "buffer_size": 600,
+  "buffer_size": 560,
   "replay_ratio": "1:2",
   "subspace_rank_k": 10,
   "n_estimation_batches": 10,

@@ -69,7 +69,7 @@ with torch.no_grad():
             gen_fast = model.fast_model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                max_new_tokens=5,
+                max_new_tokens=8,
                 do_sample=False,
             )
         preds_fast = tokenizer.batch_decode(gen_fast, skip_special_tokens=True)
@@ -92,7 +92,7 @@ with torch.no_grad():
             gen_slow = model.generate(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
-                max_new_tokens=5,
+                max_new_tokens=8,
                 do_sample=False,
             )
         preds_slow = tokenizer.batch_decode(gen_slow, skip_special_tokens=True)
