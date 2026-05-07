@@ -16,6 +16,8 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import T5Tokenizer
 
+from src.data.prompts import format_prompt
+
 
 # Some rows (long IMDB / Yelp / Amazon reviews) exceed the default 131_072 limit.
 csv.field_size_limit(min(sys.maxsize, 2**31 - 1))
@@ -102,7 +104,7 @@ def load_task(
     n_train: int,
     n_test: int,
     batch_size: int = 8,
-    max_input_len: int = 256,
+    max_input_len: int = 512,
     max_target_len: int = 8,
     seed: int = 42,
     num_workers: int = 0,
@@ -144,8 +146,9 @@ def load_task(
         test_rows = [all_test[i] for i in te.tolist()]
 
     def tokenise(row: dict) -> dict:
+        prompt = format_prompt(task_name, row["text"])
         model_inputs = tokenizer(
-            row["text"],
+            prompt,
             max_length=max_input_len,
             padding="max_length",
             truncation=True,

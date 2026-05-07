@@ -50,15 +50,17 @@ ALL_SEEDS      = [42, 123, 456]
 ALL_ORDERS     = [0]
 
 
-def run_single(method: str, benchmark: str, order: int, seed: int):
+def run_single(method: str, benchmark: str, order: int, seed: int, beta: float):
     method_args = METHODS[method]
-    run_name = f"compare_{method}_{benchmark}_ord{order}_s{seed}"
+    beta_tag = f"_b{beta:g}".replace(".", "p")
+    run_name = f"compare_{method}_{benchmark}_ord{order}_s{seed}{beta_tag}"
 
     cmd = [
         sys.executable, str(SCRIPT),
         "--benchmark", benchmark,
         "--order",     str(order),
         "--seed",      str(seed),
+        "--beta",      str(beta),
         "--run-name",  run_name,
     ] + method_args
 
@@ -112,6 +114,10 @@ Examples:
         help="Task orders (default: 0)",
     )
     p.add_argument(
+        "--beta", type=float, default=0.995,
+        help="EMA decay for slow-LoRA (default: 0.995; try 0.975 for tighter memory window)",
+    )
+    p.add_argument(
         "--fast", action="store_true",
         help="Fast mode: 1 seed x rq1 only (quick VRAM/logic check)",
     )
@@ -135,10 +141,11 @@ Examples:
     print(f"  Benchmarks : {benchmarks}")
     print(f"  Seeds      : {seeds}")
     print(f"  Orders     : {orders}")
+    print(f"  Beta       : {cfg.beta}")
 
     all_runs = []
     for benchmark, method, order, seed in product(benchmarks, methods, orders, seeds):
-        run_name = run_single(method, benchmark, order, seed)
+        run_name = run_single(method, benchmark, order, seed, cfg.beta)
         all_runs.append(run_name)
 
     print(f"\n[Done] Completed {len(all_runs)} comparison runs.")
@@ -159,7 +166,8 @@ Examples:
             continue
         # Build descriptive filename from method names so plots don't overwrite
         methods_tag = "_".join(sorted(methods))
-        save_path = outputs_dir / f"comparison_{methods_tag}_{bench}.png"
+        beta_tag = f"_b{cfg.beta:g}".replace(".", "p")
+        save_path = outputs_dir / f"comparison_{methods_tag}_{bench}{beta_tag}.png"
         cmd = (
             [sys.executable, str(plot_script), "--compare-runs"]
             + [str(p) for p in bench_runs]

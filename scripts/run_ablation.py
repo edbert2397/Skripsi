@@ -15,10 +15,10 @@ Each ablation can be run independently:
 
 Without any --ablation-* flag, the script exits with a usage message.
 
-Hardware notes (RTX 4050 6GB):
-  - Each individual ablation run uses the same reduced batch sizes as
-    run_experiment.py (batch_size=8, grad_accum=8, fp16=True).
-  - Ablations are run sequentially to avoid OOM.
+Hardware notes (rented GPU):
+  - Each individual ablation run uses the paper-spec batch sizes from
+    run_experiment.py (batch_size_current=64, batch_size_replay=32, grad_accum=1, fp16=True).
+  - Ablations are run sequentially.
   - Use --fast to run 1 seed × 1 order × reduced candidates for quick checks.
 """
 

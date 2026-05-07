@@ -1,5 +1,5 @@
 # Base hyperparameters - shared across all experiments
-# Adjusted for RTX 4050 6GB VRAM
+# Tuned for rented GPU (paper-spec batch sizes, no accumulation)
 
 model:
   name: "t5-large"               # 770M params
@@ -10,9 +10,9 @@ model:
 
 training:
   lr: 1.0e-3
-  batch_size_current: 8          # Micro-batch; effective = 8*8 = 64 (paper spec)
-  batch_size_replay: 8           # Micro-batch; 4 triggers/step * 8 = 32 total (paper spec)
-  grad_accum_steps: 8            # Effective batch = 64 (8*8)
+  batch_size_current: 64         # Real batch (paper spec)
+  batch_size_replay: 32          # 32 replay samples per optimizer step (paper spec)
+  grad_accum_steps: 1            # No accumulation — one forward = one optimizer step
   epochs_per_task: 1
   dropout: 0.1
   replay_ratio: "1:2"            # 1 replay per 2 current samples
@@ -36,7 +36,8 @@ logging:
   use_wandb: false
   log_every_n_steps: 50
 
-# RTX 4050 6GB notes:
+# Memory notes:
 # - fp16 + gradient_checkpointing brings T5-Large to ~4.5GB base
-# - Per-sample grad batch of 8 keeps peak at ~5.5GB
+# - With batch=64 + replay=32 (no accumulation), expect ~14-18GB peak depending on seq length
+# - If VRAM tight, drop grad_accum_steps back up (e.g. 2 or 4) and halve batch_size_*
 # - Full SVD on LoRA gradients is cheap (d_lora ~ 0.1% of params)

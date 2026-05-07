@@ -63,9 +63,9 @@ DEFAULTS = dict(
     grad_batch_size=4,           # mini-batch for per-sample grad estimation
     hybrid_alpha=0.5,
     lr=1e-3,
-    batch_size_current=8,        # micro-batch; effective = 8*8 accum = 64 (paper spec)
-    batch_size_replay=8,         # micro-batch; 4 triggers/step * 8 = 32 total (paper spec)
-    grad_accum_steps=8,          # effective current batch = 64
+    batch_size_current=64,       # real batch (no accumulation) — paper spec
+    batch_size_replay=32,        # 32 replay samples per optimizer step (paper spec)
+    grad_accum_steps=1,          # one optimizer step per forward (rented GPU has VRAM headroom)
     fp16=True,
     gradient_checkpointing=True,
     update_buffer_before=False,  # False = Orthogonal-After (best ablation variant)
@@ -126,7 +126,8 @@ def build_run_name(cfg) -> str:
     ema = "ema" if cfg.use_ema else "noema"
     olora = "_olora" if cfg.use_orthogonal_lora else ""
     timing = "_before" if cfg.update_buffer_before else ""
-    return f"{cfg.benchmark}_ord{cfg.order}_s{cfg.seed}_{sel}_{ema}{olora}{timing}"
+    beta_tag = f"_b{cfg.beta:g}".replace(".", "p")
+    return f"{cfg.benchmark}_ord{cfg.order}_s{cfg.seed}_{sel}_{ema}{olora}{timing}{beta_tag}"
 
 
 def main():
@@ -148,8 +149,15 @@ def main():
     logger = Logger(cfg, run_name=run_name, use_wandb=cfg.use_wandb)
 
     # ---- Parse replay ratio ----
+    # With grad_accum_steps=1, each forward is one optimizer step, so replay must
+    # fire every step to preserve the paper's per-step composition (64 current + 32 replay).
+    # The ratio "1:N" now scales batch_size_replay = batch_size_current // N for ablations,
+    # rather than skipping optimizer steps.
     ratio_num, ratio_den = map(int, cfg.replay_ratio.split(":"))
-    cfg.replay_interval = ratio_den  # replay every ratio_den steps
+    cfg.replay_interval = 1
+    if cfg.grad_accum_steps == 1 and cfg.replay_ratio != "1:2":
+        # Ablation override: rescale replay batch from current batch via the ratio.
+        cfg.batch_size_replay = max(1, cfg.batch_size_current // ratio_den)
 
     # ---- Load model ----
     print("[Model] Loading T5-Large...")

@@ -4,20 +4,20 @@ Implementation of *Orthogonal Gradient-Based Replay Selection with Slow-Fast LoR
 
 ---
 
-## Hardware: RTX 4050 6GB
+## Hardware: rented GPU (paper-spec batch sizes)
 
-All defaults are tuned for 6GB VRAM:
+All defaults follow the paper spec directly (no gradient accumulation):
 
 | Setting | Value | Why |
 |---|---|---|
-| `batch_size_current` | 8 | Reduced from 64 |
-| `batch_size_replay` | 4 | Reduced from 32 |
-| `grad_accum_steps` | 8 | Effective batch = 64 |
+| `batch_size_current` | 64 | Paper spec — real batch, no accumulation |
+| `batch_size_replay` | 32 | Paper spec — 32 replay samples per optimizer step |
+| `grad_accum_steps` | 1 | One forward = one optimizer step |
 | `fp16` | True | Mixed precision saves ~40% VRAM |
 | `gradient_checkpointing` | True | Saves ~40% activation memory |
-| `grad_batch_size` | 8 | Per-sample grad micro-batch |
+| `grad_batch_size` | 4 | Per-sample grad micro-batch (selection only) |
 
-T5-Large + LoRA rank 8 + fp16 + gradient checkpointing ≈ **4.5–5.5 GB** peak.
+T5-Large + LoRA rank 8 + fp16 + gradient checkpointing with batch=64+32 replay ≈ **14–18 GB** peak depending on sequence length. If running on tight VRAM, raise `--grad-accum-steps` and lower `--batch-size-current` / `--batch-size-replay` proportionally.
 
 ---
 
