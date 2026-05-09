@@ -23,6 +23,7 @@ import argparse
 import sys
 import os
 import json
+import time
 import torch
 import random
 import numpy as np
@@ -133,6 +134,7 @@ def build_run_name(cfg) -> str:
 def main():
     cfg = parse_args()
     set_seed(cfg.seed)
+    t_run_start = time.perf_counter()
 
     # Resolve buffer size from benchmark if not explicitly overridden
     # rq1: 2% of 14 tasks * 2,000 train = 28,000 total
@@ -226,6 +228,7 @@ def main():
     print()
 
     # ---- Main CL loop ----
+    compute_seconds_per_task = {}
     for task_id, task_name in enumerate(task_order):
         print(f"\n{'='*60}")
         print(f"[Task {task_id}/{len(task_order)-1}] {task_name}")
@@ -241,6 +244,7 @@ def main():
         if hasattr(model, "prepare_for_new_task"):
             model.prepare_for_new_task()
 
+        t_task_start = time.perf_counter()
         trainer.train_on_task(
             task_id=task_id,
             dataset=train_samples,
@@ -248,20 +252,32 @@ def main():
         )
 
         results = evaluator.evaluate_all_tasks(model, all_test_loaders, task_id)
+        task_seconds = time.perf_counter() - t_task_start
+        compute_seconds_per_task[task_id] = task_seconds
+        print(f"[Time] task {task_id} ({task_name}): {task_seconds:.1f}s")
         logger.log_task_result(task_id, {task_order[k]: v for k, v in results.items()})
 
     # ---- Final metrics ----
     summary = evaluator.summary()
+    compute_seconds_total = time.perf_counter() - t_run_start
     print(f"\n{'='*60}")
     print(f"[FINAL] FP={summary['FP']:.4f}  AP={summary['AP']:.4f}  Forgetting={summary['Forgetting']:.4f}")
+    print(f"[Time]  total run: {compute_seconds_total:.1f}s "
+          f"({compute_seconds_total/60:.1f} min)")
     print(f"{'='*60}")
 
     out_path = logger.log_dir / "final_results.json"
     with open(out_path, "w") as f:
-        json.dump({"summary": summary, "task_sizes": task_sizes, "all_results": {
-            str(k): {str(kk): vv for kk, vv in v.items()}
-            for k, v in evaluator.all_results.items()
-        }}, f, indent=2)
+        json.dump({
+            "summary": summary,
+            "task_sizes": task_sizes,
+            "all_results": {
+                str(k): {str(kk): vv for kk, vv in v.items()}
+                for k, v in evaluator.all_results.items()
+            },
+            "compute_seconds_total": compute_seconds_total,
+            "compute_seconds_per_task": {str(k): v for k, v in compute_seconds_per_task.items()},
+        }, f, indent=2)
     print(f"[Saved] {out_path}")
 
     plot_run(logger.log_dir, task_order)

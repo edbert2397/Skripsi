@@ -1,0 +1,61 @@
+\subsection{Experimental Setup Recap}
+\label{subsec:setupRecap}
+
+All four methods are evaluated under the same training configuration
+to ensure that any difference in performance can be attributed to the
+replay selection rule, not to differences in optimisation or model
+capacity.
+
+\paragraph*{Backbone and adaptation.} The shared backbone is
+T5-Large with all pretrained weights frozen, adapted via Dual LoRA
+(fast and slow adapters, rank $r=8$, $\alpha=32$) attached to the
+$\mathbf{W}_Q$ and $\mathbf{W}_V$ projections of every attention block.
+The slow adapter is updated through an exponential moving average of
+the fast adapter with decay $\beta=0.995$ and is the adapter used at
+evaluation time
+(Section~\ref{subsec:dualLoraEMA}).
+
+\paragraph*{Benchmark and budget.} The benchmark is the LNT 14-task
+sequence in Order~0 with seed~42. Each task contributes
+$2{,}000$ training samples and a held-out test split. With a
+micro-batch size of~$8$ and gradient accumulation factor of~$8$, this
+gives an effective batch size of~$64$ and roughly~$31$ optimiser
+steps per task.
+
+\paragraph*{Replay buffer.} The buffer follows the SuRe convention of
+storing $2\%$ of the total training corpus, giving a total budget of
+$S = 0.02 \times (14 \times 2{,}000) = 560$ samples. The budget is
+divided equally across tasks already learned, so the per-task quota
+shrinks as the sequence progresses (Equation~\ref{eq:perTaskQuota}).
+Table~\ref{tab:bufferDynamics} shows this evolution at selected
+checkpoints. By the end of training, each task is represented by
+only $40$ samples in the buffer, but the total memory footprint stays
+fixed at $560$ throughout.
+
+\begin{table}[ht]
+\centering
+\caption{Buffer quota evolution under the SuRe $2\%$ convention.
+Per-task quota shrinks as more tasks share the fixed budget, but
+total memory stays constant at $S=560$.}
+\label{tab:bufferDynamics}
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{After completing} & \textbf{Per-task quota $m_d$} & \textbf{Total stored} \\
+\midrule
+Task 1   & 560 & 560 \\
+Task 2   & 280 & 560 \\
+Task 4   & 140 & 560 \\
+Task 7   & 80  & 560 \\
+Task 10  & 56  & 560 \\
+Task 14  & 40  & 560 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph*{Training mix.} Each training step uses a mixed batch of
+current-task samples and replay samples drawn from $\mathcal{M}$, with
+a fixed replay ratio of [\textit{TODO: 1:2 / 1:8}] across all four
+methods. Because the ratio, buffer size, and EMA decay are identical
+for every method, the only variable is the scoring rule that decides
+which samples enter $\mathcal{M}$.

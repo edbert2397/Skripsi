@@ -24,7 +24,8 @@
       "PowerShell($now = Get-Date; $proc = Get-Process -Id 20076 -ErrorAction SilentlyContinue; \"Now             : $now\"; \"PID 20076 alive : $\\($null -ne $proc\\)\"; if \\($proc\\) { \"Runtime         : $\\([math]::Round\\(\\($now-$proc.StartTime\\).TotalMinutes,1\\)\\) min\"; \"RAM             : $\\([math]::Round\\($proc.WS/1MB,0\\)\\) MB\"; \"CPU time        : $\\([math]::Round\\($proc.CPU,0\\)\\) s\" }; $log = Get-Item outputs/compare_feature_rq1_ord0_s42/log.jsonl -ErrorAction SilentlyContinue; if \\($log\\) { \"Log mtime       : $\\($log.LastWriteTime\\) \\(age $\\([math]::Round\\(\\($now-$log.LastWriteTime\\).TotalMinutes,1\\)\\) min\\)\" })",
       "PowerShell(Stop-Process -Id 20076 -Force -ErrorAction SilentlyContinue; Stop-Process -Id 10680 -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2; \"After kill — python processes still alive:\"; Get-Process python -ErrorAction SilentlyContinue | Format-Table Id,StartTime,@{N='WSMb';E={[math]::Round\\($_.WS/1MB,0\\)}} -AutoSize)",
       "PowerShell(Remove-Item outputs/compare_feature_rq1_ord0_s42/log.jsonl -Force -ErrorAction SilentlyContinue; \"log.jsonl exists after delete: $\\(Test-Path outputs/compare_feature_rq1_ord0_s42/log.jsonl\\)\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('scripts/run_comparison.py'\\).read\\(\\)\\); ast.parse\\(open\\('scripts/run_experiment.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('scripts/run_comparison.py'\\).read\\(\\)\\); ast.parse\\(open\\('scripts/run_experiment.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('scripts/run_comparison.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
     ]
   },
   "outputStyle": "Explanatory"
