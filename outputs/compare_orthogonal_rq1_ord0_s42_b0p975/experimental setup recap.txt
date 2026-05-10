@@ -1,10 +1,10 @@
 \subsection{Experimental Setup Recap}
 \label{subsec:setupRecap}
 
-All four methods are evaluated under the same training configuration
-to ensure that any difference in performance can be attributed to the
-replay selection rule, not to differences in optimisation or model
-capacity.
+All methods are evaluated under the same training configuration to
+ensure that any difference in performance can be attributed to the
+replay selection rule (or its absence, in the No Replay lower bound),
+not to differences in optimisation or model capacity.
 
 \paragraph*{Backbone and adaptation.} The shared backbone is
 T5-Large with all pretrained weights frozen, adapted via Dual LoRA
@@ -55,7 +55,17 @@ Task 14  & 40  & 560 \\
 
 \paragraph*{Training mix.} Each training step uses a mixed batch of
 current-task samples and replay samples drawn from $\mathcal{M}$, with
-a fixed replay ratio of [\textit{TODO: 1:2 / 1:8}] across all four
+a fixed replay ratio of [\textit{TODO: 1:2 / 1:8}] across all replay
 methods. Because the ratio, buffer size, and EMA decay are identical
-for every method, the only variable is the scoring rule that decides
-which samples enter $\mathcal{M}$.
+for every replay method, the only variable is the scoring rule that
+decides which samples enter $\mathcal{M}$.
+
+\paragraph*{No Replay lower bound.} As a naive baseline we additionally
+include a No Replay configuration that trains on the LNT sequence
+without any buffer or replay step. The buffer remains empty throughout
+($|\mathcal{M}|=0$ at every step) and each task is fitted purely from
+its own $2{,}000$ training samples. All other components -- T5-Large
+backbone, Dual LoRA adapters, EMA decay $\beta$, optimiser, and
+schedule -- match the replay methods exactly. This isolates the
+contribution of replay itself from the contribution of any particular
+selection rule.

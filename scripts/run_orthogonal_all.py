@@ -32,7 +32,7 @@ def main():
 
     cmd = [
         sys.executable, str(COMPARISON_SCRIPT),
-        "--methods", "orthogonal", "feature", "conflict", "surprise", "reservoir",
+        "--methods", "orthogonal", "feature", "conflict", "surprise", "reservoir", "no_replay",
     ] + args
 
     print("=" * 60)

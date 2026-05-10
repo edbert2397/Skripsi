@@ -4,6 +4,7 @@ from .conflict import ConflictSelector
 from .surprise import SurpriseSelector
 from .reservoir import RandomBalancedSelector
 from .hybrid import HybridSelector
+from .no_replay import NoReplaySelector
 
 
 def build_selector(cfg):
@@ -38,6 +39,8 @@ def build_selector(cfg):
         return SurpriseSelector(use_fp16=use_fp16)
     elif method in ("reservoir", "random_balanced"):
         return RandomBalancedSelector(seed=getattr(cfg, "seed", 42))
+    elif method in ("none", "no_replay"):
+        return NoReplaySelector()
     elif method == "hybrid":
         return HybridSelector(
             alpha=alpha,

@@ -89,7 +89,7 @@ def parse_args():
     p.add_argument("--order", type=int, choices=[0], default=DEFAULTS["order"])
     p.add_argument("--seed", type=int, default=DEFAULTS["seed"])
 
-    p.add_argument("--selection", choices=["orthogonal", "feature", "conflict", "surprise", "reservoir", "hybrid"],
+    p.add_argument("--selection", choices=["orthogonal", "feature", "conflict", "surprise", "reservoir", "hybrid", "none"],
                    default=DEFAULTS["selection"])
     p.add_argument("--no-ema", dest="use_ema", action="store_false", default=DEFAULTS["use_ema"])
     p.add_argument("--use-orthogonal-lora", action="store_true", default=DEFAULTS["use_orthogonal_lora"])

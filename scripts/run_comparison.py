@@ -51,6 +51,7 @@ METHODS = {
     "conflict":   ["--selection", "conflict"],
     "surprise":   ["--selection", "surprise"],
     "reservoir":  ["--selection", "reservoir"],
+    "no_replay":  ["--selection", "none"],
 }
 
 ALL_BENCHMARKS = ["rq1"]
@@ -265,6 +266,7 @@ Methods:
   conflict    O-Conflict: gradient conflict score + EMA (Method 3)
   surprise    SuRe baseline: surprise-based selection + EMA
   reservoir   Random baseline: reservoir sampling + EMA
+  no_replay   Naive baseline: sequential fine-tune, no buffer/replay
 
 Examples:
   python scripts/run_comparison.py
