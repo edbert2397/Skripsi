@@ -1,0 +1,28 @@
+{"step": 0, "train/loss": 17.197265625}
+{"step": 0, "task_sst2_acc": 0.0}
+{"step": 32, "train/loss": 1.4402281045913696}
+{"step": 1, "task_sst2_acc": 0.0035046728971962616, "task_ag_news_acc": 0.0}
+{"step": 64, "train/loss": 1.719663381576538}
+{"step": 2, "task_sst2_acc": 0.24649532710280375, "task_ag_news_acc": 0.0, "task_mnli_acc": 0.044044044044044044}
+{"step": 96, "train/loss": 1.0440356731414795}
+{"step": 3, "task_sst2_acc": 0.6682242990654206, "task_ag_news_acc": 0.018, "task_mnli_acc": 0.14714714714714713, "task_imdb_acc": 0.002}
+{"step": 128, "train/loss": 1.8394105434417725}
+{"step": 4, "task_sst2_acc": 0.8820093457943925, "task_ag_news_acc": 0.596, "task_mnli_acc": 0.4244244244244244, "task_imdb_acc": 0.16, "task_dbpedia_acc": 0.09758551307847083}
+{"step": 160, "train/loss": 0.31227758526802063}
+{"step": 5, "task_sst2_acc": 0.9299065420560748, "task_ag_news_acc": 0.788, "task_mnli_acc": 0.4774774774774775, "task_imdb_acc": 0.65, "task_dbpedia_acc": 0.6911468812877264, "task_snli_acc": 0.42742742742742745}
+{"step": 192, "train/loss": 0.5333200693130493}
+{"step": 6, "task_sst2_acc": 0.9404205607476636, "task_ag_news_acc": 0.842, "task_mnli_acc": 0.5165165165165165, "task_imdb_acc": 0.738, "task_dbpedia_acc": 0.8380281690140845, "task_snli_acc": 0.5055055055055055, "task_cola_acc": 0.5046583850931677}
+{"step": 224, "train/loss": 0.26532021164894104}
+{"step": 7, "task_sst2_acc": 0.9415887850467289, "task_ag_news_acc": 0.858, "task_mnli_acc": 0.5375375375375375, "task_imdb_acc": 0.793, "task_dbpedia_acc": 0.937625754527163, "task_snli_acc": 0.5595595595595596, "task_cola_acc": 0.5015527950310559, "task_yelp_acc": 0.905}
+{"step": 256, "train/loss": 1.1677284240722656}
+{"step": 8, "task_sst2_acc": 0.9415887850467289, "task_ag_news_acc": 0.873, "task_mnli_acc": 0.5615615615615616, "task_imdb_acc": 0.832, "task_dbpedia_acc": 0.959758551307847, "task_snli_acc": 0.5885885885885885, "task_cola_acc": 0.5108695652173914, "task_yelp_acc": 0.912, "task_yahoo_acc": 0.397}
+{"step": 288, "train/loss": 0.30254071950912476}
+{"step": 9, "task_sst2_acc": 0.9415887850467289, "task_ag_news_acc": 0.871, "task_mnli_acc": 0.5785785785785785, "task_imdb_acc": 0.858, "task_dbpedia_acc": 0.9688128772635815, "task_snli_acc": 0.6266266266266266, "task_cola_acc": 0.5201863354037267, "task_yelp_acc": 0.931, "task_yahoo_acc": 0.481, "task_qnli_acc": 0.478}
+{"step": 320, "train/loss": 0.22367995977401733}
+{"step": 10, "task_sst2_acc": 0.9415887850467289, "task_ag_news_acc": 0.874, "task_mnli_acc": 0.5875875875875876, "task_imdb_acc": 0.861, "task_dbpedia_acc": 0.9738430583501007, "task_snli_acc": 0.6906906906906907, "task_cola_acc": 0.5295031055900621, "task_yelp_acc": 0.944, "task_yahoo_acc": 0.548, "task_qnli_acc": 0.71, "task_mrpc_acc": 0.5}
+{"step": 352, "train/loss": 0.0484473742544651}
+{"step": 11, "task_sst2_acc": 0.9392523364485982, "task_ag_news_acc": 0.87, "task_mnli_acc": 0.5995995995995996, "task_imdb_acc": 0.871, "task_dbpedia_acc": 0.9738430583501007, "task_snli_acc": 0.7467467467467468, "task_cola_acc": 0.5357142857142857, "task_yelp_acc": 0.95, "task_yahoo_acc": 0.555, "task_qnli_acc": 0.815, "task_mrpc_acc": 0.5116279069767442, "task_amazon_acc": 0.957}
+{"step": 384, "train/loss": 2.039003610610962}
+{"step": 12, "task_sst2_acc": 0.9392523364485982, "task_ag_news_acc": 0.869, "task_mnli_acc": 0.6036036036036037, "task_imdb_acc": 0.877, "task_dbpedia_acc": 0.971830985915493, "task_snli_acc": 0.7777777777777778, "task_cola_acc": 0.5357142857142857, "task_yelp_acc": 0.954, "task_yahoo_acc": 0.573, "task_qnli_acc": 0.866, "task_mrpc_acc": 0.5968992248062015, "task_amazon_acc": 0.958, "task_newsgroup20_acc": 0.1368312757201646}
+{"step": 415, "train/loss": 0.15271000564098358}
+{"step": 13, "task_sst2_acc": 0.9345794392523364, "task_ag_news_acc": 0.872, "task_mnli_acc": 0.6086086086086087, "task_imdb_acc": 0.893, "task_dbpedia_acc": 0.9748490945674044, "task_snli_acc": 0.7737737737737738, "task_cola_acc": 0.5450310559006211, "task_yelp_acc": 0.958, "task_yahoo_acc": 0.587, "task_qnli_acc": 0.902, "task_mrpc_acc": 0.7325581395348837, "task_amazon_acc": 0.957, "task_newsgroup20_acc": 0.22530864197530864, "task_rte_acc": 0.7137404580152672}

@@ -1,0 +1,9 @@
+{"step": 0, "train/loss": 17.1416015625}
+{"step": 0, "task_sst2_acc": 0.0}
+{"step": 32, "train/loss": 2.412766933441162}
+{"step": 1, "task_sst2_acc": 0.0011682242990654205, "task_ag_news_acc": 0.0}
+{"step": 64, "train/loss": 1.8922556638717651}
+{"step": 2, "task_sst2_acc": 0.21495327102803738, "task_ag_news_acc": 0.0, "task_mnli_acc": 0.08808808808808809}
+{"step": 96, "train/loss": 2.0210378170013428}
+{"step": 3, "task_sst2_acc": 0.830607476635514, "task_ag_news_acc": 0.009, "task_mnli_acc": 0.48148148148148145, "task_imdb_acc": 0.001}
+{"step": 128, "train/loss": 6.898720741271973}
