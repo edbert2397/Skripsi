@@ -27,11 +27,12 @@ class OrthogonalSelector(BaseSelector):
         self.grad_batch_size = grad_batch_size
         self.use_fp16 = use_fp16
         self.projection_matrix: Optional[torch.Tensor] = None  # V_k: [d_lora, k] CPU fp32
+        self.singular_values: Optional[torch.Tensor] = None
 
     def prepare_for_task(self, model, dataloader, device: torch.device):
         """Phase 1: estimate gradient subspace from current task batches."""
         print(f"[OrthogonalSelector] Estimating gradient subspace (k={self.k})...")
-        self.projection_matrix = estimate_gradient_subspace(
+        self.projection_matrix, self.singular_values = estimate_gradient_subspace(
             model=model,
             dataloader=dataloader,
             device=device,

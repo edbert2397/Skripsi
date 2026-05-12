@@ -33,11 +33,12 @@ class FeatureSelector(BaseSelector):
         self.score_batch_size = score_batch_size
         self.use_fp16 = use_fp16
         self.projection_matrix: Optional[torch.Tensor] = None  # V_k: [d_hidden, k] CPU fp32
+        self.singular_values: Optional[torch.Tensor] = None
 
     def prepare_for_task(self, model, dataloader, device: torch.device):
         """Phase 1B: estimate feature subspace from current task encoder outputs."""
         print(f"[FeatureSelector] Estimating feature subspace (k={self.k})...")
-        self.projection_matrix = estimate_feature_subspace(
+        self.projection_matrix, self.singular_values = estimate_feature_subspace(
             model=model,
             dataloader=dataloader,
             device=device,

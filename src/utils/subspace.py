@@ -6,8 +6,9 @@ Adapted for RTX 4050 6GB: gradient matrix G is built on CPU (it's
 then SVD is performed on CPU with torch.linalg.svd.
 """
 
+from typing import Optional, Tuple
+
 import torch
-from typing import Optional
 
 
 def estimate_gradient_subspace(
@@ -17,7 +18,7 @@ def estimate_gradient_subspace(
     subspace_rank_k: int = 10,
     n_estimation_batches: int = 10,
     use_fp16: bool = True,
-) -> torch.Tensor:
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Phase 1 of the method: estimate the current task's gradient subspace.
 
@@ -119,11 +120,14 @@ def estimate_gradient_subspace(
     V_k = (G.T @ U_k) / sigma_k.unsqueeze(0)    # [d_lora, k]
     V_k = V_k.contiguous()
 
+    # All singular values, descending order (eigh returns ascending, so we flip)
+    all_sigmas = eigenvalues.clamp(min=0).sqrt().flip(0)   # shape [n_batches]
+
     if not was_training:
         model.eval()
     torch.cuda.empty_cache()
 
-    return V_k   # CPU fp32, shape [d_lora, k]
+    return V_k, all_sigmas
 
 
 def orthogonal_residual_norm(

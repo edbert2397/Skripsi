@@ -249,6 +249,7 @@ def main():
             task_id=task_id,
             dataset=train_samples,
             dataloader=train_loader,
+            task_name=task_name,
         )
 
         results = evaluator.evaluate_all_tasks(model, all_test_loaders, task_id)

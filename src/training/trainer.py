@@ -93,12 +93,31 @@ class ContinualTrainer:
         return merged
 
     # ------------------------------------------------------------------
+    def _log_singular_values(self, task_id: int, task_name: str = ""):
+        """Spectral diagnostic: log singular values per task for post-hoc effective-rank analysis."""
+        if not self.logger:
+            return
+        sigmas = getattr(self.selector, "singular_values", None)
+        if sigmas is None:
+            return
+        import json
+        method = getattr(self.config, "selection_method", "unknown")
+        sigma_log_path = self.logger.log_dir / f"sigma_log_{method}.jsonl"
+        with open(sigma_log_path, "a") as f:
+            f.write(json.dumps({
+                "seed": int(getattr(self.config, "seed", -1)),
+                "task_idx": int(task_id),
+                "task_name": str(task_name),
+                "singular_values": sigmas.detach().cpu().numpy().tolist(),
+            }) + "\n")
+
     def train_on_task(
         self,
         task_id: int,
         dataset: list,
         dataloader,
         candidate_dataset: Optional[list] = None,
+        task_name: Optional[str] = None,
     ):
         """
         Full training procedure for one task.
@@ -108,6 +127,7 @@ class ContinualTrainer:
             dataset:           list of tokenised samples (for buffer selection)
             dataloader:        DataLoader for the current task
             candidate_dataset: if None, uses dataset for buffer selection
+            task_name:         optional human-readable task name (used for sigma logging)
         """
         if candidate_dataset is None:
             candidate_dataset = dataset
@@ -118,6 +138,7 @@ class ContinualTrainer:
         # ---- Orthogonal-Before variant ----
         if self.update_buffer_before:
             self.selector.prepare_for_task(self.model, dataloader, self.device)
+            self._log_singular_values(task_id, task_name or "")
             self._update_buffer(task_id, candidate_dataset)
 
         # ---- Phase 3: Train with replay ----
@@ -179,6 +200,7 @@ class ContinualTrainer:
         # ---- Phase 2: Update buffer (Orthogonal-After, default) ----
         if not self.update_buffer_before:
             self.selector.prepare_for_task(self.model, dataloader, self.device)
+            self._log_singular_values(task_id, task_name or "")
             self._update_buffer(task_id, candidate_dataset)
 
         avg_loss = total_loss / max(1, n_steps)

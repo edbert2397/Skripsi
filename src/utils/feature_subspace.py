@@ -16,7 +16,7 @@ Memory profile (T5-Large, d_hidden=1024):
 """
 
 import torch
-from typing import Optional
+from typing import Optional, Tuple
 
 
 def estimate_feature_subspace(
@@ -26,7 +26,7 @@ def estimate_feature_subspace(
     subspace_rank_k: int = 10,
     n_estimation_batches: int = 10,
     use_fp16: bool = True,
-) -> torch.Tensor:
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Phase 1B: estimate the current task's feature subspace from encoder
     hidden states.
@@ -107,17 +107,19 @@ def estimate_feature_subspace(
         U_k = U[:, -k:]                                      # [n_tokens, k]
         sigma_k = eigenvalues[-k:].clamp(min=1e-10).sqrt()    # [k]
         V_k = (H.T @ U_k) / sigma_k.unsqueeze(0)             # [d_hidden, k]
+        all_sigmas = eigenvalues.clamp(min=0).sqrt().flip(0)  # full spectrum, descending
     else:
         # Many tokens (typical case) — use randomized SVD (efficient for top-k)
         U, S, V = torch.svd_lowrank(H, q=k, niter=4)
         V_k = V  # [d_hidden, k]
+        all_sigmas = S   # svd_lowrank already returns top-k in descending order
 
     V_k = V_k.contiguous()
 
     model.train()
     torch.cuda.empty_cache()
 
-    return V_k   # CPU fp32, shape [d_hidden, k]
+    return V_k, all_sigmas
 
 
 def feature_orthogonal_residual_norm(

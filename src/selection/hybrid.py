@@ -38,6 +38,11 @@ class HybridSelector(BaseSelector):
         """Delegate subspace estimation to OrthogonalSelector."""
         self._orth.prepare_for_task(model, dataloader, device)
 
+    @property
+    def singular_values(self):
+        """Expose inner OrthogonalSelector's spectrum for spectral logging."""
+        return getattr(self._orth, "singular_values", None)
+
     def score_samples(
         self,
         model,
