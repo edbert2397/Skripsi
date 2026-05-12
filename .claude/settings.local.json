@@ -26,7 +26,9 @@
       "PowerShell(Remove-Item outputs/compare_feature_rq1_ord0_s42/log.jsonl -Force -ErrorAction SilentlyContinue; \"log.jsonl exists after delete: $\\(Test-Path outputs/compare_feature_rq1_ord0_s42/log.jsonl\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\('scripts/run_comparison.py'\\).read\\(\\)\\); ast.parse\\(open\\('scripts/run_experiment.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(python -c \"import ast; ast.parse\\(open\\('scripts/run_comparison.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
-      "Bash(findstr /R \"FP AP Forgetting\")"
+      "Bash(findstr /R \"FP AP Forgetting\")",
+      "Bash(git rm *)",
+      "Bash(findstr /V \"^.. venv/\")"
     ]
   },
   "outputStyle": "Explanatory"

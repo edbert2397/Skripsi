@@ -58,9 +58,35 @@ ALL_BENCHMARKS = ["rq1"]
 ALL_SEEDS      = [42, 123, 456]
 ALL_ORDERS     = [0]
 
+# Default (k, n) for the gradient/feature subspace selectors — must match
+# run_experiment.py's DEFAULTS. The kn_tag below only fires when either knob
+# differs from these, so existing default-config runs keep their legacy folder
+# names (no stale-folder confusion, no need to re-run baselines).
+DEFAULT_K = 10
+DEFAULT_N = 10
+
+# Methods that actually consume subspace_rank_k / n_estimation_batches.
+# surprise/reservoir/no_replay ignore these knobs (see src/selection/__init__.py),
+# so we MUST NOT tag their run folders — otherwise a sensitivity sweep would
+# produce phantom duplicate baseline runs that compute identical results.
+SUBSPACE_METHODS = {"orthogonal", "feature", "conflict", "hybrid"}
+
 
 def _beta_tag(beta: float) -> str:
     return f"_b{beta:g}".replace(".", "p")
+
+
+def _kn_tag(method: str, k: int, n: int) -> str:
+    """Folder suffix encoding the subspace knobs.
+
+    Returns '' for non-subspace methods or when both knobs are at their defaults,
+    so this change is backwards-compatible with all existing run folders.
+    """
+    if method not in SUBSPACE_METHODS:
+        return ""
+    if k == DEFAULT_K and n == DEFAULT_N:
+        return ""
+    return f"_k{k}n{n}"
 
 
 def _seeds_tag(seeds: list) -> str:
@@ -72,7 +98,9 @@ def _seeds_tag(seeds: list) -> str:
 
 
 def aggregate_method(method: str, benchmark: str, order: int,
-                     seeds: list, beta: float, outputs_dir: Path):
+                     seeds: list, beta: float, outputs_dir: Path,
+                     subspace_rank_k: int = DEFAULT_K,
+                     n_estimation_batches: int = DEFAULT_N):
     """Average per-seed results for one method into a single folder.
 
     Reads each seed's `compare_{method}_{benchmark}_ord{order}_s{seed}{beta_tag}/`
@@ -85,10 +113,11 @@ def aggregate_method(method: str, benchmark: str, order: int,
     Falls back to the lone seed's dir when only one seed is present.
     """
     beta_tag = _beta_tag(beta)
+    kn_tag = _kn_tag(method, subspace_rank_k, n_estimation_batches)
 
     per_seed = []
     for seed in seeds:
-        d = outputs_dir / f"compare_{method}_{benchmark}_ord{order}_s{seed}{beta_tag}"
+        d = outputs_dir / f"compare_{method}_{benchmark}_ord{order}_s{seed}{beta_tag}{kn_tag}"
         if not (d / "final_results.json").exists():
             print(f"[Aggregate] {method}: skipping seed {seed} (no final_results.json at {d})")
             continue
@@ -169,7 +198,7 @@ def aggregate_method(method: str, benchmark: str, order: int,
 
     seeds_used = [s for s, _ in per_seed]
     seeds_tag = _seeds_tag(seeds_used)
-    agg_dir = outputs_dir / f"compare_{method}_{benchmark}_ord{order}_{seeds_tag}{beta_tag}"
+    agg_dir = outputs_dir / f"compare_{method}_{benchmark}_ord{order}_{seeds_tag}{beta_tag}{kn_tag}"
     agg_dir.mkdir(parents=True, exist_ok=True)
 
     out_payload = {
@@ -234,10 +263,13 @@ def aggregate_method(method: str, benchmark: str, order: int,
     return agg_dir
 
 
-def run_single(method: str, benchmark: str, order: int, seed: int, beta: float):
+def run_single(method: str, benchmark: str, order: int, seed: int, beta: float,
+               subspace_rank_k: int = DEFAULT_K,
+               n_estimation_batches: int = DEFAULT_N):
     method_args = METHODS[method]
     beta_tag = _beta_tag(beta)
-    run_name = f"compare_{method}_{benchmark}_ord{order}_s{seed}{beta_tag}"
+    kn_tag = _kn_tag(method, subspace_rank_k, n_estimation_batches)
+    run_name = f"compare_{method}_{benchmark}_ord{order}_s{seed}{beta_tag}{kn_tag}"
 
     cmd = [
         sys.executable, str(SCRIPT),
@@ -247,6 +279,14 @@ def run_single(method: str, benchmark: str, order: int, seed: int, beta: float):
         "--beta",      str(beta),
         "--run-name",  run_name,
     ] + method_args
+
+    # Only forward the subspace knobs to methods that actually use them; for
+    # baselines we let run_experiment.py keep its own defaults so logs stay clean.
+    if method in SUBSPACE_METHODS:
+        cmd += [
+            "--subspace-rank-k",      str(subspace_rank_k),
+            "--n-estimation-batches", str(n_estimation_batches),
+        ]
 
     print(f"\n>>> {' '.join(cmd)}\n")
     result = subprocess.run(cmd)
@@ -303,6 +343,16 @@ Examples:
         help="EMA decay for slow-LoRA (default: 0.995; try 0.975 for tighter memory window)",
     )
     p.add_argument(
+        "--subspace-rank-k", type=int, default=DEFAULT_K,
+        help=f"Truncated SVD rank p for orthogonal/feature/conflict/hybrid "
+             f"(default: {DEFAULT_K}). Sensitivity sweep: try 5 or 20.",
+    )
+    p.add_argument(
+        "--n-estimation-batches", type=int, default=DEFAULT_N,
+        help=f"Batches n used to estimate the gradient/feature subspace "
+             f"(default: {DEFAULT_N}). Effective rank is min(k, n), so keep n >= k.",
+    )
+    p.add_argument(
         "--fast", action="store_true",
         help="Fast mode: 1 seed x rq1 only (quick VRAM/logic check)",
     )
@@ -327,10 +377,16 @@ Examples:
     print(f"  Seeds      : {seeds}")
     print(f"  Orders     : {orders}")
     print(f"  Beta       : {cfg.beta}")
+    if cfg.subspace_rank_k != DEFAULT_K or cfg.n_estimation_batches != DEFAULT_N:
+        active = sorted(m for m in methods if m in SUBSPACE_METHODS)
+        print(f"  Subspace   : k={cfg.subspace_rank_k}, n={cfg.n_estimation_batches} "
+              f"(applied to: {active or 'none'})")
 
     all_runs = []
     for benchmark, method, order, seed in product(benchmarks, methods, orders, seeds):
-        run_name = run_single(method, benchmark, order, seed, cfg.beta)
+        run_name = run_single(method, benchmark, order, seed, cfg.beta,
+                              subspace_rank_k=cfg.subspace_rank_k,
+                              n_estimation_batches=cfg.n_estimation_batches)
         all_runs.append(run_name)
 
     print(f"\n[Done] Completed {len(all_runs)} comparison runs.")
@@ -346,7 +402,9 @@ Examples:
     # When only one seed was run, aggregate_method short-circuits to that seed's dir.
     aggregated = {}  # (benchmark, method, order) -> Path
     for benchmark, method, order in product(benchmarks, methods, orders):
-        agg_dir = aggregate_method(method, benchmark, order, seeds, cfg.beta, outputs_dir)
+        agg_dir = aggregate_method(method, benchmark, order, seeds, cfg.beta, outputs_dir,
+                                   subspace_rank_k=cfg.subspace_rank_k,
+                                   n_estimation_batches=cfg.n_estimation_batches)
         if agg_dir is not None:
             aggregated[(benchmark, method, order)] = agg_dir
 
@@ -356,6 +414,10 @@ Examples:
     plot_script = Path(__file__).parent / "plot_results.py"
     seeds_tag = _seeds_tag(seeds)
     beta_tag = _beta_tag(cfg.beta)
+    # Use any active subspace method to pick up the kn_tag; if none of the
+    # methods consume subspace knobs, kn_tag is empty by construction.
+    kn_method = next((m for m in methods if m in SUBSPACE_METHODS), methods[0])
+    kn_tag = _kn_tag(kn_method, cfg.subspace_rank_k, cfg.n_estimation_batches)
     for bench in benchmarks:
         bench_dirs = [
             aggregated[(bench, m, o)]
@@ -365,7 +427,7 @@ Examples:
         if len(bench_dirs) < 2:
             continue
         methods_tag = "_".join(sorted(methods))
-        save_path = outputs_dir / f"comparison_{methods_tag}_{bench}_{seeds_tag}{beta_tag}.png"
+        save_path = outputs_dir / f"comparison_{methods_tag}_{bench}_{seeds_tag}{beta_tag}{kn_tag}.png"
         cmd = (
             [sys.executable, str(plot_script), "--compare-runs"]
             + [str(p) for p in bench_dirs]
