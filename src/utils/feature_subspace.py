@@ -48,6 +48,12 @@ def estimate_feature_subspace(
     model.eval()
     m = getattr(model, "fast_model", model)
 
+    # Match GSRS / trainer: prefer bfloat16 when supported (no overflow,
+    # no scaler needed); fall back to float16 otherwise. No GradScaler here
+    # because this path is forward-only under torch.no_grad().
+    amp_dtype = (torch.bfloat16 if (torch.cuda.is_available() and torch.cuda.is_bf16_supported())
+                 else torch.float16)
+
     all_features = []
 
     for i, batch in enumerate(dataloader):
@@ -59,7 +65,7 @@ def estimate_feature_subspace(
 
         with torch.no_grad():
             if use_fp16:
-                with torch.autocast(device_type="cuda", dtype=torch.float16):
+                with torch.autocast(device_type="cuda", dtype=amp_dtype):
                     outputs = m(
                         input_ids=batch["input_ids"],
                         attention_mask=batch["attention_mask"],
