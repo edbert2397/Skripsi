@@ -1,15 +1,14 @@
 {
   "benchmark": "rq1",
   "order": 0,
-  "seed": 45,
-  "selection": "orthogonal",
+  "selection": "reservoir",
   "use_ema": true,
   "use_orthogonal_lora": false,
   "beta": 0.995,
   "buffer_size": 560,
   "replay_ratio": "1:2",
-  "subspace_rank_k": 20,
-  "n_estimation_batches": 31,
+  "subspace_rank_k": 10,
+  "n_estimation_batches": 10,
   "grad_batch_size": 4,
   "hybrid_alpha": 0.5,
   "lr": 0.001,
@@ -20,5 +19,14 @@
   "gradient_checkpointing": true,
   "update_buffer_before": false,
   "use_wandb": false,
-  "run_name": "compare_orthogonal_rq1_ord0_s45_b0p995_k20n31"
+  "run_name": "compare_reservoir_rq1_ord0_s43_b0p995",
+  "seeds": [
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49
+  ]
 }

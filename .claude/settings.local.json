@@ -28,7 +28,8 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('scripts/run_comparison.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(findstr /R \"FP AP Forgetting\")",
       "Bash(git rm *)",
-      "Bash(findstr /V \"^.. venv/\")"
+      "Bash(findstr /V \"^.. venv/\")",
+      "Bash(python scripts/reaggregate_drop_seeds.py --help)"
     ]
   },
   "outputStyle": "Explanatory"
